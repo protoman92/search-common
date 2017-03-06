@@ -1,9 +1,9 @@
 const
 	baseDir = "../../..",
-	sharedDir = baseDir + "/nodecommon",
+	sharedDir = baseDir + "/node-common",
 	sharedHandlerDir = sharedDir + "/handlers",
-	sharedSearchDir = sharedHandlerDir + "/search",
-	search = require(sharedHandlerDir + "/search/search.js"),
+	sharedSearchDir = __dirname,
+	search = require(sharedSearchDir + "/search.js"),
 	utils = require(sharedHandlerDir + "/util/common.js"),
 	Analyzer = require(sharedSearchDir + "/analyzer.js");
 

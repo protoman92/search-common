@@ -1,8 +1,8 @@
 const
 	baseDir = "../../..",
-	sharedDir = baseDir + "/nodecommon",
+	sharedDir = baseDir + "/node-common",
 	sharedHandlerDir = sharedDir + "/handlers",
-	sharedSearchDir = sharedHandlerDir + "/search",
+	sharedSearchDir = __dirname,
 	Index = require(sharedSearchDir + "/index.js");
 
 function Reindex() {

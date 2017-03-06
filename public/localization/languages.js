@@ -1,6 +1,6 @@
 const
 	baseDir = "../../..",
-	sharedDir = baseDir + "/nodecommon"
+	sharedDir = baseDir + "/node-common"
 	sharedHandlerDir = sharedDir + "/handlers",
 	utils = require(sharedHandlerDir + "/util/common.js");
 
@@ -14,6 +14,7 @@ const languages = {
 		if (String.isInstance(language)) {
 			const 
 				keys = utils.getKeys(instance),
+				
 				filtered = keys
 					.map(key => instance[key])
 					.filter(lang => lang && lang.value == language);

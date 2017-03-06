@@ -7,10 +7,10 @@ require("dotenv").load();
  */
 const 
 	baseDir = "../../../..",
-	sharedDir = baseDir + "/nodecommon",
+	sharedDir = baseDir + "/node-common",
 	sharedHandlerDir = sharedDir + "/handlers",
 	sharedPublicDir = sharedDir + "/public",
-	sharedSearchDir = sharedHandlerDir + "/search",
+	sharedSearchDir = baseDir + "/search-common/handlers/search",
 	search = require(sharedSearchDir + "/search.js");
 
 search.currentVersion = function() {
@@ -963,7 +963,7 @@ describe("Nested Object Tests", function() {
 		}
 	});
 
-	it.only(
+	it(
 		"Sorting parent documents by nested children",
 		function(done) {
 			const 

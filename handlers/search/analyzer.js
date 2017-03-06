@@ -1,8 +1,8 @@
 const
 	baseDir = "../../..",
-	sharedDir = baseDir + "/nodecommon",
+	sharedDir = baseDir + "/node-common",
 	sharedHandlerDir = sharedDir + "/handlers",
-	sharedSearchDir = sharedHandlerDir + "/search",
+	sharedSearchDir = __dirname,
 	utils = require(sharedHandlerDir + "/util/common.js"),
 	Tokenizer = require(sharedSearchDir + "/tokenizer.js"),
 	TokenFilter = require(sharedSearchDir + "/tokenFilter.js");

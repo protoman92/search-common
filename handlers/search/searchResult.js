@@ -1,8 +1,8 @@
 const
 	baseDir = "../../..",
-	sharedDir = baseDir + "/nodecommon",
+	sharedDir = baseDir + "/node-common",
 	sharedHandlerDir = sharedDir + "/handlers",
-	sharedSearchDir = sharedHandlerDir + "/search",
+	sharedSearchDir = __dirname,
 	Aggregation = require(sharedSearchDir + "/aggregation.js"),
 	SearchItem = require(sharedSearchDir + "/searchItem.js");
 
