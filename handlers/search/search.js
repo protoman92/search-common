@@ -13,7 +13,8 @@ const
 	Params = require(sharedSearchDir + "/params.js"),
 	Reindex = require(sharedSearchDir + "/reindex.js"),
 	SearchItem = require(sharedSearchDir + "/searchItem.js"),
-	SearchResult = require(sharedSearchDir + "/searchResult.js");
+	SearchResult = require(sharedSearchDir + "/searchResult.js"),
+	Sort = require(sharedSearchDir + "/sort.js");
 
 var client = undefined;
 const main = this;
@@ -34,6 +35,19 @@ exports.currentVersion = function() {
 		return process.env.ELASTICSEARCH_DEBUG_VERSION;
 	} else {
 		return process.env.ELASTICSEARCH_RELEASE_VERSION;
+	}
+};
+
+/**
+ * We expect that our deployment will have two config vars called
+ * ELASTICSEARCH_(DEBUG/RELEASE)_VERSION.
+ * @return {String} ElasticSearch host url.
+ */
+exports.hostUrl = function() {
+	if (env.isDebugging()) {
+		return process.env.ELASTICSEARCH_DEBUG_URL;
+	} else {
+		return process.env.ELASTICSEARCH_RELEASE_URL;
 	}
 };
 
@@ -60,15 +74,15 @@ exports.isVersion5x = function() {
  * @param  {object} args Placeholder parameters
  */
 exports.startService = function(args) {
-	var apiVersion, host, log;
+	const 
+		apiVersion = main.currentVersion(), 
+		host = main.hostUrl();
+
+	var log;
 
 	if (env.isDebugging()) {
-		apiVersion = process.env.ELASTICSEARCH_DEBUG_VERSION;
-		host = process.env.ELASTICSEARCH_DEBUG_URL;
 		log = "error";
 	} else {
-		apiVersion = process.env.ELASTICSEARCH_RELEASE_VERSION;
-		host = process.env.ELASTICSEARCH_RELEASE_URL;
 		log = "error";
 	}
 
@@ -383,7 +397,34 @@ exports.searchDocumentObservable = function(args) {
 	const client = main.client();
 
 	if (client && args) {
-		return rx.Observable.just(args)
+		const sort = (args.body || {}).sort;
+		var newArgs = utils.clone(args);
+
+		/**
+		 * We can either pass an object of type Sort, or an array of Sort
+		 * objects. If this is the case, we need to call .json() to convert
+		 * the object(s) into the correct search format.
+		 */
+		if (sort) {
+			var sorts = [];
+
+			if (Sort.isInstance(sort)) {
+				sorts = [sort];
+			} else if (Array.isInstance(sort) && Sort.isInstance(sort[0])) {
+				sorts = sort;
+			}
+
+			const newSorts = sorts
+				.filter(sort => Sort.isInstance(sort))
+				.filter(sort => sort.hasAllRequiredInformation())
+				.map(sort => sort.json());
+
+			if (newSorts.length) {
+				newArgs.body.sort = newSorts;
+			}
+		}
+
+		return rx.Observable.just(newArgs)
 			.flatMap(args => client.search(args))
 			.map(data => SearchResult.newBuilder()
 				.withSearchResult(data)

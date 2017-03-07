@@ -64,7 +64,7 @@ function Index() {
 };
 
 Index.prototype.setName = function(name) {
-	if (String.isInstance(name) && name) {
+	if (name && String.isInstance(name)) {
 		this.name = name;
 	}
 
@@ -88,7 +88,7 @@ Index.prototype.setNumberOfReplicas = function(number) {
 };
 
 Index.prototype.setIndexAlias = function(alias) {
-	if (String.isInstance(alias)) {
+	if (alias && String.isInstance(alias)) {
 		this.indexAlias = alias;
 	}
 
@@ -96,7 +96,7 @@ Index.prototype.setIndexAlias = function(alias) {
 };
 
 Index.prototype.setSearchAlias = function(alias) {
-	if (String.isInstance(alias)) {
+	if (alias && String.isInstance(alias)) {
 		this.searchAlias = alias;
 	}
 

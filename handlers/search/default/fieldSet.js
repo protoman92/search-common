@@ -31,9 +31,7 @@ FieldSet.prototype.fields = function() {
 FieldSet.autocomplete = function(args) {
 	var fieldSet = new FieldSet();
 
-	const 
-		fdConst = FieldSet.Constant,
-		azConst = AnalyzerSet.Constant;
+	const fdConst = FieldSet.Constant, azConst = AnalyzerSet.Constant;
 
 	fieldSet.autocomplete = Field.newBuilder()
 		.withName(fdConst.AUTOCOMPLETE_FIELD_NAME)

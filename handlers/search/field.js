@@ -2,9 +2,11 @@ const
 	baseDir = "../../..",
 	sharedDir = baseDir + "/node-common",
 	sharedHandlerDir = sharedDir + "/handlers",
+	sharedUtilDir = sharedHandlerDir + "/util",
 	sharedSearchDir = __dirname,
 	search = require(sharedSearchDir + "/search.js"),
-	utils = require(sharedHandlerDir + "/util/common.js"),
+	typeChecker = require(sharedUtilDir + "/type.js"),
+	utils = require(sharedUtilDir + "/common.js"),
 	Analyzer = require(sharedSearchDir + "/analyzer.js");
 
 function Field() {
@@ -308,7 +310,7 @@ Field.prototype.hasAllRequiredInformation = function() {
 	switch (true) {
 		case this.getName().isEmpty():
 		case this.getType().isEmpty():
-			Error.debugException();
+			Error.debugException(this);
 			return false;
 
 		default:
@@ -358,7 +360,7 @@ Field.prototype.json = function() {
 
 		if (fields.length) {
 			const multifields = fields
-				.filter(field => field)
+				.filter(field => Field.isInstance(field))
 				.filter(field => field.hasAllRequiredInformation())
 				.map(field => field.json())
 				.reduce((a, b) => Object.assign(a, b), {});
@@ -462,6 +464,12 @@ Field.Builder = function() {
 
 Field.newBuilder = function() {
 	return Field.Builder();
+};
+
+Field.isInstance = function() {
+	return typeChecker.isInstance(arguments, function(value) {
+		return value instanceof Field
+	});
 };
 
 module.exports = Field;

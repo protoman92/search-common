@@ -462,6 +462,7 @@ BulkUpdate.newBuilder = function() {
 
 function BulkIndex() {
 	var params = new BaseBulk();
+	
 	params.update = {};
 
 	params.setUpdate = function(update) {

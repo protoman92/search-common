@@ -34,6 +34,7 @@ const
 	Tokenizer = require(sharedSearchDir + "/tokenizer.js"),
 	TokenFilter = require(sharedSearchDir + "/tokenFilter.js"),
 	Type = require(sharedSearchDir + "/type.js"),
+	Sort = require(sharedSearchDir + "/sort.js"),
 	Field = require(sharedSearchDir + "/field.js");
 
 utils.includeUtils();
@@ -441,7 +442,7 @@ describe("Index and Search Tests", function() {
 		}),
 
 		testIndexes = [testIndex],
-		objectCount = 50,
+		objectCount = 500,
 		stringLength = 10,
 		arrayLength = 2;
 
@@ -966,99 +967,58 @@ describe("Nested Object Tests", function() {
 	it(
 		"Sorting parent documents by nested children",
 		function(done) {
-			const 
-				orders = ["asc", "desc"],
-				modes = ["max", "min", "avg", "sum"];
+			const sortAndOrderPairs = function() {
+				const
+					orders = Sort.Order.allValues(),
+					modes = Sort.Mode.allValues();
 
-			rx.Observable.from(orders)
-				.flatMap(order => rx.Observable
-					.from(modes)
-					.flatMap(mode => search
-						.searchDocumentObservable({
-							index : testIndex.name,
-							type : "test-type",
+				return orders
+					.map(order => modes.map(function(mode) {
+						return {order : order, mode : mode};
+					}))
+					.reduce((a, b) => a.concat(b), []);
+			};
 
-							body : {
-								sort : [
-									{
-										"nested1.double1": { 
-								  			order: order,
-								  			mode : mode,
-								  			nested_path : "nested1"
-										}
-									}
-								],
+			rx.Observable
+				.from(sortAndOrderPairs())
+				.flatMap(pair => search
+					.searchDocumentObservable({
+						index : testIndex.name,
+						type : "test-type",
 
-								size : search.MAX_SEARCH_PAGE_SIZE
-							}
-						})
-						.map(result => result.items)
-						.map(items => items.map(item => item.data))
-						.map(items => items.map(item => item.nested1))
-						.map(items => 
-							items.map(item => item.map(obj => obj.double1)))
-						.doOnNext(function(val) {
-							assert.isTrue(val.length > 0);
+						body : {
+							sort : [
+								Sort.newBuilder()
+									.withFieldName("nested1.double1")
+									.withOrder(pair.order.value)
+									.withMode(pair.mode.value)
+									.withNestedPath("nested1")
+									.build()
+							],
 
-							var sortMode, sortOrder;
+							size : search.MAX_SEARCH_PAGE_SIZE
+						}
+					})
+					.map(result => result.items)
+					.map(items => items.map(item => item.data))
+					.map(items => items.map(item => 
+						item.nested1.map(data => data.double1)))
+					.doOnNext(function(val) {
+						const 
+							orderFcn = pair.order.method,
+							modeFcn = pair.mode.method,
+							processedResult = val.map(modeFcn).sort(orderFcn),
 
-							const original = objectArray
+							original = objectArray
 								.map(obj => obj.nested1)
-								.map(obj => obj.map(item => item.double1));
+								.map(obj => obj.map(item => item.double1)),
 
-							switch (mode) {
-								case "max":
-									sortMode = val => Math.maximum(val);
-									break;
+							processedOriginal = original
+								.map(modeFcn)
+								.sort(orderFcn);
 
-								case "min":
-									sortMode = val => Math.minimum(val);
-									break;
-
-								case "median":
-									sortMode = val => Math.median(val);
-									break;
-
-								case "sum":
-									sortMode = val => Math.sum(val);
-									break;
-
-								case "avg":
-								default:
-									sortMode = val => Math.mean(val);
-									break;
-							}
-
-							switch (order) {
-								case "asc":
-									sortOrder = (a, b) => a - b;
-									break;
-
-								case "desc":
-								default:
-									sortOrder = (a, b) => b - a;
-									break;						
-							}
-
-							const 
-								pOriginal = original
-									.map(sortMode)
-									.sort(sortOrder),
-
-								pResult = val.map(sortMode);
-
-							console.log({
-								order : order,
-								mode : mode,
-								search_result : val, 
-								processed_result : pResult, 
-								original : original, 
-								processed_original : pOriginal
-							});
-
-							assert.deepEqual(pResult, pOriginal);
-						})
-					)
+						assert.deepEqual(processedResult, processedOriginal);
+					})
 				)
 				.subscribe(
 					function(val) {},
