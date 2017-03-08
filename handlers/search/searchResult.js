@@ -3,7 +3,6 @@ const
 	sharedDir = baseDir + "/node-common",
 	sharedHandlerDir = sharedDir + "/handlers",
 	sharedSearchDir = __dirname,
-	Aggregation = require(sharedSearchDir + "/aggregation.js"),
 	SearchItem = require(sharedSearchDir + "/searchItem.js");
 
 function SearchResult() {
@@ -20,10 +19,10 @@ function SearchResult() {
 	this.items = [];
 
 	/**
-	 * An Array of Aggregation.
-	 * @type {Array} An Array of Aggregation.
+	 * An Aggregation object.
+	 * @type {Array} An Aggregation object.
 	 */
-	this.aggregations = [];
+	this.aggregations = {};
 
 	/**
 	 * The number of SearchItem.
@@ -56,7 +55,7 @@ SearchResult.prototype.setItemCount = function(itemCount) {
 
 SearchResult.prototype.setAggregations = function(aggs) {
 	if (aggs && Object.isInstance(aggs)) {
-		this.aggregations = Aggregation.fromAggregations(aggs);
+		this.aggregations = aggs;
 	}
 
 	return this;
@@ -96,7 +95,7 @@ SearchResult.prototype.getItemCount = function() {
 };
 
 SearchResult.prototype.getAggregations = function() {
-	return this.aggregations || [];
+	return this.aggregations || {};
 };
 
 SearchResult.prototype.getItems = function() {
@@ -117,10 +116,7 @@ SearchResult.prototype.json = function() {
 	json[SearchResult.MAX_SCORE_KEY] = this.getMaxScore();
 	json[SearchResult.ITEM_COUNT_KEY] = this.getItemCount();
 	json[SearchResult.ITEMS_KEY] = this.getItems().map(item => item.json())
-
-	json[SearchResult.AGGREGATION_KEY] = 
-		this.getAggregations().map(aggs => aggs.json());
-
+	json[SearchResult.AGGREGATION_KEY] = this.getAggregations();
 	json[SearchResult.SCROLL_ID_KEY] = this.getScrollId();
 	return json;
 };

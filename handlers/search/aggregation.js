@@ -94,6 +94,7 @@ Aggregation.newBuilder = function() {
 };
 
 Aggregation.fromAggregations = function(args) {
+	console.log(args.tags.tag_count.buckets);
 	const keys = utils.getKeys(args);
 	var aggregations = [];
 
