@@ -95,10 +95,16 @@ AnalyzerSet.autocomplete = function() {
 		constants = AnalyzerSet.Constant, 
 		azDefaults = Analyzer.Default(),
 		azTypes = Analyzer.Type,
-		tkDefaults = Tokenizer.Default();
+		tkDefaults = Tokenizer.Default(),
+		tkfDefaults = TokenFilter.Default();
 
 	analyzerSet.autocompleteSearch = Analyzer.newBuilder()
 		.withName(constants.SEARCH.autocompleteAnalyzer({}))
+
+		/**
+		 * icu analyzer seems to work well for most languages, even
+		 * non-supported Asian texts (e.g. Vietnamese)
+		 */
 		.withAnalyzer(azDefaults.ICU)
 		.build();
 
@@ -107,7 +113,11 @@ AnalyzerSet.autocomplete = function() {
 		.withType(azTypes.CUSTOM.value)
 		.withTokenizer(tkDefaults.ICU)
 		.withTokenFilters([
-			TokenFilter.Default().LOWERCASE,
+			/**
+			 * We need to use icu_folding to convert tokens into a similar
+			 * format as found in the autocomplete search analyzer.
+			 */
+			tkfDefaults.ICU_FOLDING,
 			
 			TokenFilter.newBuilder()
 				.withName(constants.INDEX.autocompleteAnalyzer({}))
