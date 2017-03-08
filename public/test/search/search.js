@@ -10,6 +10,7 @@ const
 	sharedDir = baseDir + "/node-common",
 	sharedHandlerDir = sharedDir + "/handlers",
 	sharedPublicDir = sharedDir + "/public",
+	sharedTestUtilDir = sharedPublicDir + "/test/util",
 	sharedSearchDir = baseDir + "/search-common/handlers/search",
 	search = require(sharedSearchDir + "/search.js");
 
@@ -21,7 +22,8 @@ const
 	assert = require("chai").assert,
 	rx = require("rx"),
 	sinon = require("sinon"),
-	faker = require(sharedPublicDir + "/test/util/faker.js"),
+	faker = require(sharedTestUtilDir + "/faker.js"),
+	testUtils = require(sharedTestUtilDir + "/common.js"),
 	utils = require(sharedHandlerDir + "/util/common.js"),
 	Analyzer = require(sharedSearchDir + "/analyzer.js"),
 	AnalyzerSet = require(sharedSearchDir + "/default/analyzerSet.js"),
@@ -38,6 +40,7 @@ const
 	Field = require(sharedSearchDir + "/field.js");
 
 utils.includeUtils();
+testUtils.includeUtils();
 
 const delay = 5000, clearDataOnStop = true;
 
@@ -442,7 +445,7 @@ describe("Index and Search Tests", function() {
 		}),
 
 		testIndexes = [testIndex],
-		objectCount = 500,
+		objectCount = 5,
 		stringLength = 10,
 		arrayLength = 2;
 
@@ -462,10 +465,7 @@ describe("Index and Search Tests", function() {
 
 	before(function(done) {
 		search.startService();
-		done();
-	});
 
-	beforeEach(function(done) {
 		search.createIndexesObservable({index: testIndexes})
 			.flatMap(val => rx.Observable.from(testIndexes))
 			.flatMap(index => rx.Observable.from(objectArray)
@@ -495,7 +495,7 @@ describe("Index and Search Tests", function() {
 			);
 	});
 
-	afterEach(function(done) {
+	after(function(done) {
 		if (clearDataOnStop) {
 			search.deleteIndexesObservable({})
 				.delay(delay)
@@ -568,6 +568,54 @@ describe("Index and Search Tests", function() {
 						done();
 					}
 				);
+		}
+	);
+
+	it.only(
+		"Autocomplete search with autocomplete engine should work correctly",
+		function(done) {
+			const oldSearch = search.searchDocumentObservable;
+
+			search.searchDocumentObservable = function(args) {
+				if (Boolean.random()) {
+					console.log("No error this time!");
+					return oldSearch(args);
+				} else {
+					return rx.Observable.throw(Error("Failed to search"));
+				}
+			};
+
+			const engine = search.autocompleteSearchEngine({
+				onResult : function(val) {
+					console.log(val.itemCount);
+				},
+
+				onError : function(err) {
+					console.log(err.message);
+				}
+			});
+
+			Number.range(10).forEach(function(word) {
+				engine.search({
+					body : {
+						query : {
+							match_all : {}
+						}
+					}
+				});
+			});
+
+			/**
+			 * Instead of waiting for onComplete(), we set a timeout to
+			 * emulate the user's interaction with the website. In this case,
+			 * we assume he/she leaves the search page within a specified
+			 * time interval, possibly after a set of results has been
+			 * delivered.
+			 */
+			setTimeout(function() {
+				engine.stop();
+				done();
+			}, 5000);
 		}
 	);
 

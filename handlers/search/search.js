@@ -145,9 +145,7 @@ exports.deleteIndexesObservable = function(args) {
 			.filter(index => Array.isInstance(index))
 			.map(index => index.map(index => index[Index.NAME_KEY]))
 			.defaultIfEmpty("_all")
-			.map(function(index) {
-				return {index : index};
-			})
+			.map(index => ({index : index}))
 			.flatMap(args => client.indices.delete(args));
 	}
 
@@ -567,26 +565,26 @@ exports.reindexObservable = function(args) {
 
 				return rx.Observable.just(newIndex)
 					.flatMapIfSatisfied(
-						val => Boolean.cast(args.createNewIndexes),
+						_ => Boolean.cast(args.createNewIndexes),
 
 						(val, obs) => main.createIndexesObservable({
 							index : val
 						})
 					)
 					.flatMapIfSatisfied(
-						val => Boolean.cast(args.transferData),
+						_ => Boolean.cast(args.transferData),
 
 						(val, obs) => main
 							.transferDataObservable(args)
 							.toArray()
 					)
 					.flatMapIfSatisfied(
-						val => Boolean.cast(args.updateAliases),
+						_ => Boolean.cast(args.updateAliases),
 
 						(val, obs) => main.updateAliasesObservable(args)
 					)
 					.flatMapIfSatisfied(
-						val => Boolean.cast(args.removeOldIndexes),
+						_ => Boolean.cast(args.removeOldIndexes),
 
 						(val, obs) => main.deleteIndexesObservable({
 							index : oldIndex
@@ -619,9 +617,7 @@ exports.getAllIndexesAndAliasesObservable = function(args) {
 			.flatMap(index => rx.Observable.from(index))
 			.map(index => index.split(" "))
 			.filter(index => index[0])
-			.map(function(index) {
-				return {index : index[0], alias : index[1]};
-			})
+			.map(index => ({index : index[0], alias : index[1]}))
 			.reduce(function(acc, x, idx, obs) {
 				const index = x.index, alias = x.alias, value = acc[index];
 				var aliases;
@@ -710,4 +706,78 @@ exports.getMappingsObservable = function(args) {
 
 	Error.debugException();
 	return rx.Observable.just({});
+};
+
+/**
+ * Use a Subject to implement search-as-you-type autocomplete search.
+ * @param  {object} args This parameter should contain some optional arguments,
+ * such as debounce i.e. the time interval required to filter out fast-emitted
+ * elements.
+ * @return {object} An object with one key method - search, which is a function
+ * that accepts an object as a parameter (this object should contain the
+ * arguments necessary to populate an ElasticSearch query).
+ */
+exports.autocompleteSearchEngine = function(args) {
+	if 
+		(client && args &&
+
+		/**
+		 * onResult and onError are two functions that handle search result
+		 * and error, respectively. We do not want to return an Observable
+		 * here due to the fact that this utility is often used to update UI
+		 * only. By default, an empty SearchResult will be returned on error,
+		 * so onError must be inserted before onErrorReturn() to catch the
+		 * error and handle it appropriately.
+		 */
+		(Function.isInstance(args.onResult, args.onError))) 
+	{
+		const 
+			engine = new rx.Subject(),
+
+			observable = engine
+				/**
+				 * Since users tend to type fast, we need to discard old
+				 * values that are not meant to be searched on, by using
+				 * debounce with a millisecond time limit. This means when
+				 * a value is emitted, another value can only be emitted if
+				 * the specified time interval has passed.
+				 */
+				.debounce(args.debounce || 500)
+				/**
+				 * flatMapLatest is used to trim stale results i.e. results
+				 * that were based on old search queries. If we had used
+				 * flatMap, all search results, both old and new, will be
+				 * emitted.
+				 */
+				.flatMapLatest(searchArgs => main
+					.searchDocumentObservable(searchArgs)
+					.doOnError(function(err) {
+						args.onError(err);
+					})
+					.onErrorReturn(SearchResult.EMPTY))
+				.doOnNext(function(val) {
+					args.onResult(val);
+				}),
+
+			subscription = observable.subscribe();
+
+		return {
+			search : function(args) {
+				engine.onNext(args);
+			},
+
+			stop : function() {
+				/**
+				 * After the subscription is disposed, the engine will
+				 * shutdown and no longer emit any more item. We usually call
+				 * this method when the user leaves the search page, for
+				 * example.
+				 */
+				subscription.dispose();
+			}
+		};
+	}
+
+	Error.debugException(args);
+	return rx.Observable.empty();
 };
