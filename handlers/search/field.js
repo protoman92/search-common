@@ -148,6 +148,11 @@ Field.Type = {
 		value : "long"
 	},
 
+	OBJECT : {
+		value : "object",
+		isObjectField : true
+	},
+
 	NESTED : {
 		value : "nested",
 		isNestedField : true
@@ -368,7 +373,7 @@ Field.prototype.json = function() {
 			/**
 			 * A field of type nested does not have multifields.
 			 */
-			if (type.isNestedField) {
+			if (type.isNestedField || type.isObjectField) {
 				inner.properties = multifields;
 			} else {
 				inner.fields = multifields;
