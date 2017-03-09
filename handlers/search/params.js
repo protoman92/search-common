@@ -1,518 +1,515 @@
-const
-	baseDir = "../../..",
-	sharedDir = baseDir + "/node-common",
-	sharedHandlerDir = sharedDir + "/handlers",
-	typeChecker = require(sharedHandlerDir + "/util/type.js"),
-	utils = require(sharedHandlerDir + "/util/common.js");
+const baseDir = '../../..';
+const sharedDir = `${baseDir}/node-common`;
+const sharedHandlerDir = `${sharedDir}/handlers`;
+const typeChecker = require(`${sharedHandlerDir}/util/type.js`);
+const utils = require(`${sharedHandlerDir}/util/common.js`);
 
-function Params() {};
+function Params() {}
 
-Params.isInstance = function() {
-	return typeChecker.isInstance(arguments, function(value) {
-		return value && Function.isInstance(
-			value.getIndex, 
-			value.getType, 
-			value.getId,
-			value.json
-		);
-	});
+Params.isInstance = function (...args) {
+  return typeChecker.isInstance(args, value => value && Function.isInstance(
+    value.getIndex,
+    value.getType,
+    value.getId,
+    value.json,
+	));
 };
 
 function BaseParams() {
-	const instance = this;
+  const instance = this;
 
-	/**
-	 * The index parameter.
-	 * @type {String} The index parameter.
-	 */
-	instance.index = "";
+  /**
+   * The index parameter.
+   * @type {String} The index parameter.
+   */
+  instance.index = '';
 
-	/**
-	 * The type parameter.
-	 * @type {String} The type parameter.
-	 */
-	instance.type = "";
+  /**
+   * The type parameter.
+   * @type {String} The type parameter.
+   */
+  instance.type = '';
 
-	/**
-	 * The id parameter.
-	 * @type {String} The id parameter.
-	 */
-	instance.id = "";
+  /**
+   * The id parameter.
+   * @type {String} The id parameter.
+   */
+  instance.id = '';
 
-	/**
-	 * The parent's id. Optional.
-	 * @type {String} The parent's id;
-	 */
-	instance.parent = "";
+  /**
+   * The parent's id. Optional.
+   * @type {String} The parent's id;
+   */
+  instance.parent = '';
 
-	instance.setIndex = function(index) {
-		if (index && String.isInstance(index)) {
-			instance.index = index;
-		}
+  instance.setIndex = function (index) {
+    if (index && String.isInstance(index)) {
+      instance.index = index;
+    }
 
-		return instance;
-	};
+    return instance;
+  };
 
-	instance.setType = function(type) {
-		if (type && String.isInstance(type)) {
-			instance.type = type;
-		}
+  instance.setType = function (type) {
+    if (type && String.isInstance(type)) {
+      instance.type = type;
+    }
 
-		return instance;
-	};
+    return instance;
+  };
 
-	instance.setId = function(id) {
-		if (id && String.isInstance(id)) {
-			instance.id = id;
-		}
+  instance.setId = function (id) {
+    if (id && String.isInstance(id)) {
+      instance.id = id;
+    }
 
-		return instance;
-	};
+    return instance;
+  };
 
-	instance.setParent = function(parent) {
-		if (parent && String.isInstance(parent)) {
-			instance.parent = parent;
-		}
+  instance.setParent = function (parent) {
+    if (parent && String.isInstance(parent)) {
+      instance.parent = parent;
+    }
 
-		return instance;
-	};
+    return instance;
+  };
 
-	instance.getIndex = function() {
-		return instance.index || "";
-	};
+  instance.getIndex = function () {
+    return instance.index || '';
+  };
 
-	instance.getType = function() {
-		return instance.type || "";
-	};
+  instance.getType = function () {
+    return instance.type || '';
+  };
 
-	instance.getId = function() {
-		return instance.id || "";
-	};
+  instance.getId = function () {
+    return instance.id || '';
+  };
 
-	instance.getParent = function() {
-		return instance.parent || "";
-	};
+  instance.getParent = function () {
+    return instance.parent || '';
+  };
 
-	/**
-	 * We allow index and type to be empty - in which case these parameters will be
-	 * supplied by substituting all indexes/types one by one. This allows flexibility
-	 * for data updates.
-	 */
-	instance.hasAllBaseInformation = function() {
-		switch (true) {
-			case instance.getId().isEmpty():
-				Error.debugException();
-				return false;
+  /**
+   * We allow index and type to be empty - in which case these parameters will be
+   * supplied by substituting all indexes/types one by one. This allows flexibility
+   * for data updates.
+   */
+  instance.hasAllBaseInformation = function () {
+    switch (true) {
+      case instance.getId().isEmpty():
+        Error.debugException();
+        return false;
 
-			default:
-				break;
-		}
+      default:
+        break;
+    }
 
-		return true;
-	};
+    return true;
+  };
 
-	instance.destinationJson = function() {
-		var json = {};
-		json[Params.INDEX_KEY] = instance.getIndex();
-		json[Params.TYPE_KEY] = instance.getType();
-		json[Params.ID_KEY] = instance.getId();
+  instance.destinationJson = function () {
+    const json = {};
+    json[Params.INDEX_KEY] = instance.getIndex();
+    json[Params.TYPE_KEY] = instance.getType();
+    json[Params.ID_KEY] = instance.getId();
 
-		const parent = this.getParent();
+    const parent = this.getParent();
 
-		if (parent) {
-			json[Params.PARENT_KEY] = parent;
-		}
+    if (parent) {
+      json[Params.PARENT_KEY] = parent;
+    }
 
-		return json;
-	};
+    return json;
+  };
 
-	instance.json = function() {
-		return {};
-	};
+  instance.json = function () {
+    return {};
+  };
 
-	instance.toString = function() {
-		return instance.json();
-	};
-};
+  instance.toString = function () {
+    return instance.json();
+  };
+}
 
 /**
  * A Base Builder object that can be extended to other Bulk Request types.
- * @param {object} instance A Request object of type Update/Index/Create/Delete.
+ * @param {object} instance A Request object of type
+ * Update/Index/Create/Delete.
  */
-BaseParams.Builder = function(instance) {
-	return {
-		withIndex : function(index) {
-			instance.setIndex(index);
-			return this;
-		},
+BaseParams.Builder = function (instance) {
+  return {
+    withIndex(index) {
+      instance.setIndex(index);
+      return this;
+    },
 
-		withType : function(type) {
-			instance.setType(type);
-			return this;
-		},
+    withType(type) {
+      instance.setType(type);
+      return this;
+    },
 
-		withId : function(id) {
-			instance.setId(id);
-			return this;
-		},
+    withId(id) {
+      instance.setId(id);
+      return this;
+    },
 
-		withParent : function(parent) {
-			instance.setParent(parent);
-			return this;
-		},
+    withParent(parent) {
+      instance.setParent(parent);
+      return this;
+    },
 
-		withParamsData : function(data) {
-			if (data) {
-				return this
-					.withIndex(data[Params.INDEX_KEY])
-					.withType(data[Params.TYPE_KEY])
-					.withId(data[Params.ID_KEY])
-					.withParent(data[Params.PARENT_KEY]);
-			} else {
-				return this;
-			}
-		},
+    withParamsData(data) {
+      if (data) {
+        return this
+          .withIndex(data[Params.INDEX_KEY])
+          .withType(data[Params.TYPE_KEY])
+          .withId(data[Params.ID_KEY])
+          .withParent(data[Params.PARENT_KEY]);
+      } else {
+        return this;
+      }
+    },
 
-		build : function() {
-			return instance;
-		}
-	};
+    build() {
+      return instance;
+    },
+  };
 };
 
-BaseParams.newBuilder = function(instance) {
-	return BaseParams.Builder(instance);
+BaseParams.newBuilder = function (instance) {
+  return BaseParams.Builder(instance);
 };
 
-Params.INDEX_KEY = "index";
-Params.TYPE_KEY = "type";
-Params.ID_KEY = "id";
-Params.PARENT_KEY = "parent";
+Params.INDEX_KEY = 'index';
+Params.TYPE_KEY = 'type';
+Params.ID_KEY = 'id';
+Params.PARENT_KEY = 'parent';
 
-///////////////////////
+// /////////////////////
 // Normal Operations //
-///////////////////////
+// /////////////////////
 
 function Update() {
-	var params = new BaseParams();
+  const params = new BaseParams();
 
-	/**
-	 * Update via script.
-	 * @type {Object} Script update object.
-	 */
-	params.script = {};
+  /**
+   * Update via script.
+   * @type {Object} Script update object.
+   */
+  params.script = {};
 
-	/**
-	 * Update via doc.
-	 * @type {Object} Doc update object.
-	 */
-	params.doc = {};
+  /**
+   * Update via doc.
+   * @type {Object} Doc update object.
+   */
+  params.doc = {};
 
-	/**
-	 * Specify how many retries should be attempted on conflict. Defaults to 0.
-	 * @type {Number} Retry count for conflicts.
-	 */
-	params.retryOnConflict = 0;
+  /**
+   * Specify how many retries should be attempted on conflict. Defaults to 0.
+   * @type {Number} Retry count for conflicts.
+   */
+  params.retryOnConflict = 0;
 
-	/**
-	 * The upsert value/object. If script update is used, this should be an object, 
-	 * otherwise, a Boolean value.
-	 * @type {Object} Object/Boolean.
-	 */
-	params.upsert = {};
+  /**
+   * The upsert value/object. If script update is used, this should be
+   * an object, otherwise, a Boolean value.
+   * @type {Object} Object/Boolean.
+   */
+  params.upsert = {};
 
-	params.setScriptUpdate = function(script) {
-		if (script && Object.isInstance(script)) {
-			params.script = script;
-		}
+  params.setScriptUpdate = function (script) {
+    if (script && Object.isInstance(script)) {
+      params.script = script;
+    }
 
-		return params;
-	};
+    return params;
+  };
 
-	params.setDocUpdate = function(doc) {
-		if (doc && Object.isInstance(doc)) {
-			params.doc = doc;
-		}
+  params.setDocUpdate = function (doc) {
+    if (doc && Object.isInstance(doc)) {
+      params.doc = doc;
+    }
 
-		return params;
-	};
+    return params;
+  };
 
-	params.setRetryOnConflict = function(retries) {
-		params.retryOnConflict = parseInt(retries);
-		return params;
-	};
+  params.setRetryOnConflict = function (retries) {
+    params.retryOnConflict = parseInt(retries, 10);
+    return params;
+  };
 
-	params.setUpsert = function(upsert) {
-		if (Object.isInstance(upsert) || Boolean.isInstance(upsert)) {
-			params.upsert = upsert;
-		}
+  params.setUpsert = function (upsert) {
+    if (Object.isInstance(upsert) || Boolean.isInstance(upsert)) {
+      params.upsert = upsert;
+    }
 
-		return params;
-	};
+    return params;
+  };
 
-	params.getScriptUpdate = function() {
-		return params.script || {};
-	};
+  params.getScriptUpdate = function () {
+    return params.script || {};
+  };
 
-	params.getDocUpdate = function() {
-		return params.doc || {};
-	};
+  params.getDocUpdate = function () {
+    return params.doc || {};
+  };
 
-	params.getUpsert = function() {
-		return params.upsert || {};
-	};
+  params.getUpsert = function () {
+    return params.upsert || {};
+  };
 
-	params.hasAllRequiredInformation = function() {
-		switch (true) {
-			case
-				utils.isEmpty(params.getScriptUpdate()) || 
-				utils.isEmpty(params.getDocUpdate()):
+  params.hasAllRequiredInformation = function () {
+    switch (true) {
+      case
+        utils.isEmpty(params.getScriptUpdate()) ||
+        utils.isEmpty(params.getDocUpdate()):
 
-			case !params.hasAllBaseInformation():
-				Error.debugException();
-				return false;
+      case !params.hasAllBaseInformation():
+        Error.debugException();
+        return false;
 
-			default:
-				break;
-		}
+      default:
+        break;
+    }
 
-		return true;
-	};
+    return true;
+  };
 
-	params.json = function() {
-		var json = params.destinationJson(), body = {};
+  params.json = function () {
+    let json = params.destinationJson(),
+      body = {};
 
-		const 
-			script = params.getScriptUpdate(),
-			doc = params.getDocUpdate(),
-			upsert = params.getUpsert();
+    const
+      script = params.getScriptUpdate(),
+      doc = params.getDocUpdate(),
+      upsert = params.getUpsert();
 
-		if (utils.isNotEmpty(script)) {
-			var newScript = utils.clone(script);
-			newScript.lang = "painless";
+    if (utils.isNotEmpty(script)) {
+      const newScript = utils.clone(script);
+      newScript.lang = 'painless';
 
-			if (utils.isNotEmpty(upsert)) {
-				body.upsert = upsert;
-			}
+      if (utils.isNotEmpty(upsert)) {
+        body.upsert = upsert;
+      }
 
-			body.script = newScript;
-		} else if (utils.isNotEmpty(doc)) {
-			if (Boolean.isInstance(upsert)) {
-				body.doc_as_upsert = upsert;
-			}
+      body.script = newScript;
+    } else if (utils.isNotEmpty(doc)) {
+      if (Boolean.isInstance(upsert)) {
+        body.doc_as_upsert = upsert;
+      }
 
-			body.doc = doc;
-		}
+      body.doc = doc;
+    }
 
-		json.body = body;
-		return json;
-	};
+    json.body = body;
+    return json;
+  };
 
-	return params;
+  return params;
+}
+
+Update.Builder = function () {
+  let
+    instance = new Update(),
+    builder = BaseParams.newBuilder(instance);
+
+  builder.withRetryOnConflict = function (retries) {
+    instance.setRetryOnConflict(retries);
+    return this;
+  };
+
+  builder.withScriptUpdate = function (script) {
+    instance.setScriptUpdate(script);
+    return this;
+  };
+
+  builder.withDocUpdate = function (doc) {
+    instance.setDocUpdate(doc);
+    return this;
+  };
+
+  builder.withUpsert = function (upsert) {
+    instance.setUpsert(upsert);
+    return this;
+  };
+
+  return builder;
 };
 
-Update.Builder = function() {
-	var 
-		instance = new Update(),
-		builder = BaseParams.newBuilder(instance);
-
-	builder.withRetryOnConflict = function(retries) {
-		instance.setRetryOnConflict(retries);
-		return this;
-	};
-
-	builder.withScriptUpdate = function(script) {
-		instance.setScriptUpdate(script);
-		return this;
-	};
-
-	builder.withDocUpdate = function(doc) {
-		instance.setDocUpdate(doc);
-		return this;
-	};
-
-	builder.withUpsert = function(upsert) {
-		instance.setUpsert(upsert);
-		return this;
-	};
-
-	return builder;
+Update.newBuilder = function () {
+  return Update.Builder();
 };
 
-Update.newBuilder = function() {
-	return Update.Builder();
-};
-
-/////////////////////
+// ///////////////////
 // Bulk Operations //
-/////////////////////
+// ///////////////////
 
 function BaseBulk() {
-	var params = new BaseParams();
-	const hasAllBaseInformation = params.hasAllBaseInformation;
+  const params = new BaseParams();
+  const hasAllBaseInformation = params.hasAllBaseInformation;
 
-	params.hasAllBaseInformation = function() {
-		switch (true) {
-			case params.getIndex().isEmpty():
-			case params.getType().isEmpty():
-			case !hasAllBaseInformation():
-				Error.debugException();
-				return false;
+  params.hasAllBaseInformation = function () {
+    switch (true) {
+      case params.getIndex().isEmpty():
+      case params.getType().isEmpty():
+      case !hasAllBaseInformation():
+        Error.debugException();
+        return false;
 
-			default:
-				break;
-		}
+      default:
+        break;
+    }
 
-		return true;
-	};
+    return true;
+  };
 
-	params.destinationJson = function() {
-		var json = {
-			_index : params.getIndex(),
-			_type : params.getType(),
-			_id : params.getId()
-		};
+  params.destinationJson = function () {
+    const json = {
+      _index: params.getIndex(),
+      _type: params.getType(),
+      _id: params.getId(),
+    };
 
-		const parent = params.getParent();
+    const parent = params.getParent();
 
-		if (parent) {
-			json.parent = parent;
-		}
+    if (parent) {
+      json.parent = parent;
+    }
 
-		return json;
-	};
+    return json;
+  };
 
-	return params;
-};
+  return params;
+}
 
 function BulkUpdate() {
-	var params = new BaseBulk();
-	params.retryOnConflict = 0;
-	params.update = {};
+  const params = new BaseBulk();
+  params.retryOnConflict = 0;
+  params.update = {};
 
-	params.setRetryOnConflict = function(retries) {
-		params.retryOnConflict = parseInt(retries);
-		return params;
-	};
+  params.setRetryOnConflict = function (retries) {
+    params.retryOnConflict = parseInt(retries, 10);
+    return params;
+  };
 
-	params.setUpdate = function(update) {
-		if (Object.isInstance(update)) {
-			params.update = update;
-		}
+  params.setUpdate = function (update) {
+    if (Object.isInstance(update)) {
+      params.update = update;
+    }
 
-		return params;
-	};
+    return params;
+  };
 
-	params.getRetryOnConflict = function() {
-		return params.retryOnConflict || 0;
-	};
+  params.getRetryOnConflict = function () {
+    return params.retryOnConflict || 0;
+  };
 
-	params.getUpdate = function() {
-		return params.update || {};
-	};
+  params.getUpdate = function () {
+    return params.update || {};
+  };
 
-	params.hasAllRequiredInformation = function() {
-		switch (true) {
-			case !params.hasAllBaseInformation():
-			case utils.isEmpty(params.getUpdate()):
-				Error.debugException();
-				return false;
+  params.hasAllRequiredInformation = function () {
+    switch (true) {
+      case !params.hasAllBaseInformation():
+      case utils.isEmpty(params.getUpdate()):
+        Error.debugException();
+        return false;
 
-			default:
-				break;
-		}
+      default:
+        break;
+    }
 
-		return true;
-	};
+    return true;
+  };
 
-	/**
-	 * Since the bulk api requires an Array of json objects, we pass the current
-	 * Request as a json Array instead of a single object.
-	 * @return {Array} An Array of json object.
- 	 */
-	params.jsonArray = function() {
-		var json = params.destinationJson();
-		json["_retry_on_conflict"] = params.getRetryOnConflict();
-		return [{update : json}, params.getUpdate()];
-	};
+  /**
+   * Since the bulk api requires an Array of json objects, we pass the
+   * current Request as a json Array instead of a single object.
+   * @return {Array} An Array of json object.
+   */
+  params.jsonArray = function () {
+    const json = params.destinationJson();
+    json._retry_on_conflict = params.getRetryOnConflict();
+    return [{ update: json }, params.getUpdate()];
+  };
 
-	return params;
+  return params;
+}
+
+BulkUpdate.Builder = function () {
+  const instance = new BulkUpdate();
+  const builder = BaseParams.newBuilder(instance);
+
+  builder.withRetryOnConflict = function (retries) {
+    instance.setRetryOnConflict(retries);
+    return this;
+  };
+
+  builder.withUpdate = function (update) {
+    instance.setUpdate(update);
+    return this;
+  };
+
+  return builder;
 };
 
-BulkUpdate.Builder = function() {
-	var 
-		instance = new BulkUpdate(),
-		builder = BaseParams.newBuilder(instance);
-
-	builder.withRetryOnConflict = function(retries) {
-		instance.setRetryOnConflict(retries);
-		return this;
-	};
-
-	builder.withUpdate = function(update) {
-		instance.setUpdate(update);
-		return this;
-	};
-
-	return builder;
-};
-
-BulkUpdate.newBuilder = function() {
-	return BulkUpdate.Builder();
+BulkUpdate.newBuilder = function () {
+  return BulkUpdate.Builder();
 };
 
 function BulkIndex() {
-	var params = new BaseBulk();
-	
-	params.update = {};
+  const params = new BaseBulk();
 
-	params.setUpdate = function(update) {
-		if (Object.isInstance(update)) {
-			params.update = update;
-		}
+  params.update = {};
 
-		return params;
-	};
+  params.setUpdate = function (update) {
+    if (Object.isInstance(update)) {
+      params.update = update;
+    }
 
-	params.getUpdate = function() {
-		return params.update || {};
-	};
+    return params;
+  };
 
-	params.hasAllRequiredInformation = function() {
-		switch (true) {
-			case !params.hasAllBaseInformation():
-			case utils.isEmpty(params.getUpdate()):
-				Error.debugException();
-				return false;
+  params.getUpdate = function () {
+    return params.update || {};
+  };
 
-			default:
-				break;
-		}
+  params.hasAllRequiredInformation = function () {
+    switch (true) {
+      case !params.hasAllBaseInformation():
+      case utils.isEmpty(params.getUpdate()):
+        Error.debugException();
+        return false;
 
-		return true;
-	};
+      default:
+        break;
+    }
 
-	params.jsonArray = function() {
-		return [{index : params.destinationJson()}, params.getUpdate()];
-	};
+    return true;
+  };
 
-	return params;
+  params.jsonArray = function () {
+    return [{ index: params.destinationJson() }, params.getUpdate()];
+  };
+
+  return params;
+}
+
+BulkIndex.Builder = function () {
+  const instance = new BulkIndex();
+  const builder = BaseParams.newBuilder(instance);
+
+  builder.withUpdate = function (update) {
+    instance.setUpdate(update);
+    return this;
+  };
+
+  return builder;
 };
 
-BulkIndex.Builder = function() {
-	var
-		instance = new BulkIndex(),
-		builder = BaseParams.newBuilder(instance);
-
-	builder.withUpdate = function(update) {
-		instance.setUpdate(update);
-		return this;
-	};
-
-	return builder;
-};
-
-BulkIndex.newBuilder = function() {
-	return BulkIndex.Builder();
+BulkIndex.newBuilder = function () {
+  return BulkIndex.Builder();
 };
 
 Params.Update = Update;

@@ -1,213 +1,207 @@
-const
-	baseDir = "../../../..",
-	sharedDir = baseDir + "/node-common",
-	sharedHandlerDir = sharedDir + "/handlers",
-	sharedSearchDir = "..",
-	languages = require(sharedDir + "/public/localization/languages.js"),
-	utils = require(sharedHandlerDir + "/util/common.js"),
-	Analyzer = require(sharedSearchDir + "/analyzer.js"),
-	Tokenizer = require(sharedSearchDir + "/tokenizer.js"),
-	TokenFilter = require(sharedSearchDir + "/tokenFilter.js");
+const baseDir = '../../../..';
+const sharedDir = `${baseDir}/node-common`;
+const sharedHandlerDir = `${sharedDir}/handlers`;
+const sharedSearchDir = '..';
+
+const languages = require(`${sharedDir}/public/localization/languages.js`);
+const utils = require(`${sharedHandlerDir}/util/common.js`);
+const Analyzer = require(`${sharedSearchDir}/analyzer.js`);
+const Tokenizer = require(`${sharedSearchDir}/tokenizer.js`);
+const TokenFilter = require(`${sharedSearchDir}/tokenFilter.js`);
 
 /* Analyzer sets comprise language-specific analyzers */
-function AnalyzerSet() {};
+function AnalyzerSet() {}
 
-const
-	EDGE_N_GRAM_MIN_GRAM = 1,
-	EDGE_N_GRAM_MAX_GRAM = 20;
+const EDGE_N_GRAM_MIN_GRAM = 1;
+const EDGE_N_GRAM_MAX_GRAM = 20;
 
 AnalyzerSet.Constant = {
-	GENERAL_LANGUAGE_NAME : "general",
+  GENERAL_LANGUAGE_NAME: 'general',
 
-	STANDARD_ANALYZER_NAME : "standard",
-	AUTOCOMPLETE_ANALYZER_NAME : "autocomplete",
+  STANDARD_ANALYZER_NAME: 'standard',
+  AUTOCOMPLETE_ANALYZER_NAME: 'autocomplete',
 
-	analyzerFromLanguage : function(args) {
-		if (args) {
-			const 
-				language = args.language, 
-				type = args.type,
-				mode = args.mode;
+  analyzerFromLanguage(args) {
+    if (args) {
+      const language = args.language;
+      const type = args.type;
+      const mode = args.mode;
 
-			return [language, mode, type.toLowerCase()].join("-");
-		}
+      return [language, mode, type.toLowerCase()].join('-');
+    }
 
-		Error.debugException();
-		return "";
-	},
+    Error.debugException();
+    return '';
+  },
 
-	INDEX : {
-		analyzer : function(args) {
-			var newArgs = args;
-			newArgs.mode = "index";
-			return AnalyzerSet.Constant.analyzerFromLanguage(newArgs);
-		},
+  INDEX: {
+    analyzer(args) {
+      const newArgs = args;
+      newArgs.mode = 'index';
+      return AnalyzerSet.Constant.analyzerFromLanguage(newArgs);
+    },
 
-		autocompleteAnalyzer : function(args) {
-			return this.analyzer({
-				language : AnalyzerSet.Constant.GENERAL_LANGUAGE_NAME,
-				type : AnalyzerSet.Constant.AUTOCOMPLETE_ANALYZER_NAME
-			});
-		},
+    autocompleteAnalyzer(args) {
+      return this.analyzer({
+        language: AnalyzerSet.Constant.GENERAL_LANGUAGE_NAME,
+        type: AnalyzerSet.Constant.AUTOCOMPLETE_ANALYZER_NAME,
+      });
+    },
 
-		standardAnalyzer : function(args) {
-			var newArgs = args;
-			newArgs.type = AnalyzerSet.Constant.STANDARD_ANALYZER_NAME;
-			return this.analyzer(newArgs);
-		}
-	},
+    standardAnalyzer(args) {
+      const newArgs = args;
+      newArgs.type = AnalyzerSet.Constant.STANDARD_ANALYZER_NAME;
+      return this.analyzer(newArgs);
+    },
+  },
 
-	SEARCH : {
-		analyzer : function(args) {
-			var newArgs = args;
-			newArgs.mode = "search";
-			return AnalyzerSet.Constant.analyzerFromLanguage(newArgs);
-		},
+  SEARCH: {
+    analyzer(args) {
+      const newArgs = args;
+      newArgs.mode = 'search';
+      return AnalyzerSet.Constant.analyzerFromLanguage(newArgs);
+    },
 
-		autocompleteAnalyzer : function(args) {
-			return this.analyzer({
-				language : AnalyzerSet.Constant.GENERAL_LANGUAGE_NAME,
-				type : AnalyzerSet.Constant.AUTOCOMPLETE_ANALYZER_NAME
-			});
-		},
+    autocompleteAnalyzer(args) {
+      return this.analyzer({
+        language: AnalyzerSet.Constant.GENERAL_LANGUAGE_NAME,
+        type: AnalyzerSet.Constant.AUTOCOMPLETE_ANALYZER_NAME,
+      });
+    },
 
-		standardAnalyzer : function(args) {
-			var newArgs = args;
-			newArgs.type = AnalyzerSet.Constant.STANDARD_ANALYZER_NAME;
-			return this.analyzer(newArgs);
-		}
-	}
+    standardAnalyzer(args) {
+      const newArgs = args;
+      newArgs.type = AnalyzerSet.Constant.STANDARD_ANALYZER_NAME;
+      return this.analyzer(newArgs);
+    },
+  },
 };
 
-AnalyzerSet.prototype.analyzers = function() {
-	const instance = this;
+AnalyzerSet.prototype.analyzers = function () {
+  const instance = this;
 
-	return utils.getKeys(instance)
-		.map(key => instance[key])
-		.filter(analyzer => analyzer)
-		.filter(analyzer => analyzer.hasAllRequiredInformation());
+  return utils.getKeys(instance)
+    .map(key => instance[key])
+    .filter(analyzer => analyzer)
+    .filter(analyzer => analyzer.hasAllRequiredInformation());
 };
 
-AnalyzerSet.autocomplete = function() {
-	var analyzerSet = new AnalyzerSet();
+AnalyzerSet.autocomplete = function () {
+  const analyzerSet = new AnalyzerSet();
 
-	const 
-		constants = AnalyzerSet.Constant, 
-		azDefaults = Analyzer.Default(),
-		azTypes = Analyzer.Type,
-		tkDefaults = Tokenizer.Default(),
-		tkfDefaults = TokenFilter.Default();
+  const constants = AnalyzerSet.Constant;
+  const azDefaults = Analyzer.Default();
+  const azTypes = Analyzer.Type;
+  const tkDefaults = Tokenizer.Default();
+  const tkfDefaults = TokenFilter.Default();
 
-	analyzerSet.autocompleteSearch = Analyzer.newBuilder()
-		.withName(constants.SEARCH.autocompleteAnalyzer({}))
+  analyzerSet.autocompleteSearch = Analyzer.newBuilder()
+    .withName(constants.SEARCH.autocompleteAnalyzer({}))
 
-		/**
-		 * icu analyzer seems to work well for most languages, even
-		 * non-supported Asian texts (e.g. Vietnamese)
-		 */
-		.withAnalyzer(azDefaults.ICU)
-		.build();
+    /**
+     * icu analyzer seems to work well for most languages, even
+     * non-supported Asian texts (e.g. Vietnamese)
+     */
+    .withAnalyzer(azDefaults.ICU)
+    .build();
 
-	analyzerSet.autocompleteIndex = Analyzer.newBuilder()
-		.withName(constants.INDEX.autocompleteAnalyzer({}))
-		.withType(azTypes.CUSTOM.value)
-		.withTokenizer(tkDefaults.ICU)
-		.withTokenFilters([
-			/**
-			 * We need to use icu_folding to convert tokens into a similar
-			 * format as found in the autocomplete search analyzer.
-			 */
-			tkfDefaults.ICU_FOLDING,
-			
-			TokenFilter.newBuilder()
-				.withName(constants.INDEX.autocompleteAnalyzer({}))
-				.withType(TokenFilter.Type.EDGE_N_GRAM.value)
-				.withAdditionalSettings(function() {
-					var settings = {};
-					const ngSettings = TokenFilter.Type.EDGE_N_GRAM;
-					settings[ngSettings.MIN_GRAM.value] = EDGE_N_GRAM_MIN_GRAM;
-					settings[ngSettings.MAX_GRAM.value] = EDGE_N_GRAM_MAX_GRAM;
-					return settings;
-				}())
-				.build()
-		])
-		.build();
+  analyzerSet.autocompleteIndex = Analyzer.newBuilder()
+    .withName(constants.INDEX.autocompleteAnalyzer({}))
+    .withType(azTypes.CUSTOM.value)
+    .withTokenizer(tkDefaults.ICU)
+    .withTokenFilters([
+      /**
+       * We need to use icu_folding to convert tokens into a similar
+       * format as found in the autocomplete search analyzer.
+       */
+      tkfDefaults.ICU_FOLDING,
 
-	return analyzerSet;
+      TokenFilter.newBuilder()
+        .withName(constants.INDEX.autocompleteAnalyzer({}))
+        .withType(TokenFilter.Type.EDGE_N_GRAM.value)
+        .withAdditionalSettings(function () {
+          const settings = {};
+          const ngSettings = TokenFilter.Type.EDGE_N_GRAM;
+          settings[ngSettings.MIN_GRAM.value] = EDGE_N_GRAM_MIN_GRAM;
+          settings[ngSettings.MAX_GRAM.value] = EDGE_N_GRAM_MAX_GRAM;
+          return settings;
+        }())
+        .build(),
+    ])
+    .build();
+
+  return analyzerSet;
 };
 
 /* English */
-AnalyzerSet.en_us = function() {
-	var analyzerSet = new AnalyzerSet();
+AnalyzerSet.en_us = function () {
+  const analyzerSet = new AnalyzerSet();
 
-	const 
-		constants = AnalyzerSet.Constant, 
-		language = languages.EN_US.value,
-		azDefaults = Analyzer.Default(),
-		langArgs = {language : language};
+  const constants = AnalyzerSet.Constant;
+  const language = languages.EN_US.value;
+  const azDefaults = Analyzer.Default();
+  const langArgs = { language };
 
-	analyzerSet.standardIndex = Analyzer.newBuilder()
-		.withName(constants.INDEX.standardAnalyzer(langArgs))
-		.withAnalyzer(azDefaults.ICU)
-		.build();
+  analyzerSet.standardIndex = Analyzer.newBuilder()
+    .withName(constants.INDEX.standardAnalyzer(langArgs))
+    .withAnalyzer(azDefaults.ICU)
+    .build();
 
-	analyzerSet.standardSearch = Analyzer.newBuilder()
-		.withName(constants.SEARCH.standardAnalyzer(langArgs))
-		.withAnalyzer(azDefaults.ICU)
-		.build();
+  analyzerSet.standardSearch = Analyzer.newBuilder()
+    .withName(constants.SEARCH.standardAnalyzer(langArgs))
+    .withAnalyzer(azDefaults.ICU)
+    .build();
 
-	return analyzerSet;
+  return analyzerSet;
 };
 
-AnalyzerSet.vi_vn = function() {
-	return AnalyzerSet.en_us();
+AnalyzerSet.vi_vn = function () {
+  return AnalyzerSet.en_us();
 };
 
-AnalyzerSet.fromLanguage = function(args) {
-	if (args && args.language) {
-		const 
-			az = AnalyzerSet,
-			defSet = "en_us",
-			language = args.language,
+AnalyzerSet.fromLanguage = function (args) {
+  const az = AnalyzerSet;
+  const defSet = 'en_us';
 
-			fromLanguage = function(language) {
-				const
-					key = language.replace("_", "-").toLowerCase(),
-					fcn = az[key] || az[defSet];
+  if (args && args.language) {
+    const language = args.language;
 
-				if (Function.isInstance(fcn)) {
-					return fcn();
-				} else {
-					return az[defSet]();
-				}
-			};
+    const fromLanguage = function (language) {
+      const key = language.replace('_', '-').toLowerCase();
+      const fcn = az[key] || az[defSet];
 
-		if (String.isInstance(language) && language) {
-			return fromLanguage(language);
-		} else if (Array.isInstance(language)) {
-			var analyzerSet = new AnalyzerSet();
+      if (Function.isInstance(fcn)) {
+        return fcn();
+      }
 
-			for (var i = 0, length = language.length; i < length; i++) {
-				const lang = language[i];
+      return az[defSet]();
+    };
 
-				if (String.isInstance(lang) && lang) {
-					const 
-						set = fromLanguage(lang),  
-						keys = utils.getKeys(set);
+    if (String.isInstance(language) && language) {
+      return fromLanguage(language);
+    } else if (Array.isInstance(language)) {
+      const analyzerSet = new AnalyzerSet();
 
-					for (j = 0, kLength = keys.length; j < kLength; j++) {
-						const key = keys[j];
-						analyzerSet[lang + "-" + key] = set[key];
-					}
-				}
-			}
+      for (let i = 0, length = language.length; i < length; i++) {
+        const lang = language[i];
 
-			return analyzerSet;
-		}
-	}
+        if (String.isInstance(lang) && lang) {
+          const set = fromLanguage(lang);
+          const keys = utils.getKeys(set);
 
-	Error.debugException();
-	return az[defSet]();
+          for (let j = 0, kLength = keys.length; j < kLength; j++) {
+            const key = keys[j];
+            analyzerSet[`${lang}-${key}`] = set[key];
+          }
+        }
+      }
+
+      return analyzerSet;
+    }
+  }
+
+  Error.debugException();
+  return az[defSet]();
 };
 
 module.exports = AnalyzerSet;
