@@ -21,19 +21,22 @@ const sinon = require('sinon');
 const faker = require(`${sharedTestUtilDir}/faker.js`);
 const testUtils = require(`${sharedTestUtilDir}/common.js`);
 const utils = require(`${sharedHandlerDir}/util/common.js`);
-const Analyzer = require(`${sharedSearchDir}/analyzer.js`);
-const AnalyzerSet = require(`${sharedSearchDir}/default/analyzerSet.js`);
-const CharFilter = require(`${sharedSearchDir}/charFilter.js`);
-const FieldSet = require(`${sharedSearchDir}/default/fieldSet.js`);
-const Index = require(`${sharedSearchDir}/index.js`);
-const Mapping = require(`${sharedSearchDir}/mapping.js`);
-const SearchItem = require(`${sharedSearchDir}/searchItem.js`);
-const SearchResult = require(`${sharedSearchDir}/searchResult.js`);
-const Tokenizer = require(`${sharedSearchDir}/tokenizer.js`);
-const TokenFilter = require(`${sharedSearchDir}/tokenFilter.js`);
-const Type = require(`${sharedSearchDir}/type.js`);
-const Sort = require(`${sharedSearchDir}/sort.js`);
-const Field = require(`${sharedSearchDir}/field.js`);
+
+const {
+  Analyzer,
+  AnalyzerSet,
+  CharFilter,
+  FieldSet,
+  Index,
+  Mapping,
+  SearchItem,
+  SearchResult,
+  Tokenizer,
+  TokenFilter,
+  Type,
+  Sort,
+  Field,
+} = require(sharedSearchDir)();
 
 utils.includeUtils();
 testUtils.includeUtils();
@@ -426,7 +429,7 @@ describe('Index and Search Tests', () => {
   const currentVersion = 1;
 
   const testIndex = new TestIndex({
-    language: ['en-us'],
+    language: ['en_us'],
     version: currentVersion,
   });
 
@@ -694,7 +697,7 @@ describe('Index and Search Tests', () => {
     'Reindex with scroll should copy all data from one index to another',
     (done) => {
       const newIndex = new TestIndex({
-        language: ['en-us'],
+        language: ['en_us'],
         version: currentVersion + Number.randomBetween(1, 10000),
       });
 
@@ -773,7 +776,7 @@ describe('Index and Search Tests', () => {
 });
 
 describe('Re-Mapping Tests', () => {
-  const testIndex = new TestIndex({ language: ['en-us'], version: 1 });
+  const testIndex = new TestIndex({ language: ['en_us'], version: 1 });
   const testIndexes = [testIndex];
   const oldFieldFcn = TestModel1.Fields;
 
@@ -786,7 +789,7 @@ describe('Re-Mapping Tests', () => {
 
   TestModel1.Fields = () => oldFields;
 
-  const newIndex = new TestIndex({ language: 'en-us', version: 2 });
+  const newIndex = new TestIndex({ language: 'en_us', version: 2 });
   const newIndexes = [newIndex];
 
   beforeAll((done) => {
@@ -886,7 +889,7 @@ describe('Re-Mapping Tests', () => {
 });
 
 describe('Nested Object Tests', () => {
-  const testIndex = new TestIndex({ language: ['en-us'], version: 1 });
+  const testIndex = new TestIndex({ language: ['en_us'], version: 1 });
   const testIndexes = [testIndex];
   const oldModel = TestModel1;
   const oldFieldFcn = TestModel1.Fields;

@@ -1,8 +1,11 @@
-const baseDir = '../../..';
+const baseDir = '../../../..';
 const sharedDir = `${baseDir}/node-common`;
 const sharedHandlerDir = `${sharedDir}/handlers`;
 const sharedSearchDir = __dirname;
-const SearchItem = require(`${sharedSearchDir}/searchItem.js`);
+
+const {
+  SearchItem,
+} = require('..')();
 
 function SearchResult() {
   /**

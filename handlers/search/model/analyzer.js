@@ -1,10 +1,7 @@
-const baseDir = '../../..';
+const baseDir = '../../../..';
 const sharedDir = `${baseDir}/node-common`;
 const sharedHandlerDir = `${sharedDir}/handlers`;
-const sharedSearchDir = __dirname;
 const utils = require(`${sharedHandlerDir}/util/common.js`);
-const Tokenizer = require(`${sharedSearchDir}/tokenizer.js`);
-const TokenFilter = require(`${sharedSearchDir}/tokenFilter.js`);
 
 function Analyzer() {
   /**
@@ -62,6 +59,11 @@ Analyzer.Type = {
 Analyzer.Default = function () {
   const defaults = {};
   const types = Analyzer.Type;
+
+  const {
+    Tokenizer,
+    TokenFilter,
+  } = require('..')();
 
   for (const key in types) {
     const type = types[key];

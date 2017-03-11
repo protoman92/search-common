@@ -1,13 +1,9 @@
 const baseDir = '../../../..';
 const sharedDir = `${baseDir}/node-common`;
 const sharedHandlerDir = `${sharedDir}/handlers`;
-const sharedSearchDir = '..';
 
 const languages = require(`${sharedDir}/public/localization/languages.js`);
 const utils = require(`${sharedHandlerDir}/util/common.js`);
-const Analyzer = require(`${sharedSearchDir}/analyzer.js`);
-const Tokenizer = require(`${sharedSearchDir}/tokenizer.js`);
-const TokenFilter = require(`${sharedSearchDir}/tokenFilter.js`);
 
 /* Analyzer sets comprise language-specific analyzers */
 function AnalyzerSet() {}
@@ -26,8 +22,7 @@ AnalyzerSet.Constant = {
       const language = args.language;
       const type = args.type;
       const mode = args.mode;
-
-      return [language, mode, type.toLowerCase()].join('-');
+      return [language, mode, type.toLowerCase()].join('_');
     }
 
     Error.debugException();
@@ -87,8 +82,13 @@ AnalyzerSet.prototype.analyzers = function () {
 };
 
 AnalyzerSet.autocomplete = function () {
-  const analyzerSet = new AnalyzerSet();
+  const {
+    Analyzer,
+    Tokenizer,
+    TokenFilter,
+  } = require('..')();
 
+  const analyzerSet = new AnalyzerSet();
   const constants = AnalyzerSet.Constant;
   const azDefaults = Analyzer.Default();
   const azTypes = Analyzer.Type;
@@ -132,31 +132,39 @@ AnalyzerSet.autocomplete = function () {
 
   return analyzerSet;
 };
-
-/* English */
-AnalyzerSet.en_us = function () {
+/**
+ * The default {@link Analyzer} implementation for many different languages.
+ * This set primarily uses ICU tokenizer and folding filter to handle both
+ * Latin-based and Asian languages.
+ * @param  {object} args This parameter must contain the language key that
+ * identifies a language code to append to the analyzer names.
+ */
+AnalyzerSet.defaultLanguageSet = function (args) {
+  const { Analyzer } = require('..')();
   const analyzerSet = new AnalyzerSet();
-
   const constants = AnalyzerSet.Constant;
-  const language = languages.EN_US.value;
   const azDefaults = Analyzer.Default();
-  const langArgs = { language };
 
   analyzerSet.standardIndex = Analyzer.newBuilder()
-    .withName(constants.INDEX.standardAnalyzer(langArgs))
+    .withName(constants.INDEX.standardAnalyzer(args))
     .withAnalyzer(azDefaults.ICU)
     .build();
 
   analyzerSet.standardSearch = Analyzer.newBuilder()
-    .withName(constants.SEARCH.standardAnalyzer(langArgs))
+    .withName(constants.SEARCH.standardAnalyzer(args))
     .withAnalyzer(azDefaults.ICU)
     .build();
 
   return analyzerSet;
 };
 
+/* English */
+AnalyzerSet.en_us = function () {
+  return AnalyzerSet.defaultLanguageSet({ language: languages.EN_US.value });
+};
+
 AnalyzerSet.vi_vn = function () {
-  return AnalyzerSet.en_us();
+  return AnalyzerSet.defaultLanguageSet({ language: languages.VI_VN.value });
 };
 
 AnalyzerSet.fromLanguage = function (args) {
@@ -167,7 +175,7 @@ AnalyzerSet.fromLanguage = function (args) {
     const language = args.language;
 
     const fromLanguage = function (language) {
-      const key = language.replace('_', '-').toLowerCase();
+      const key = language.toLowerCase();
       const fcn = az[key] || az[defSet];
 
       if (Function.isInstance(fcn)) {

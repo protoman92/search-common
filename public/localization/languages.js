@@ -1,38 +1,35 @@
-const
-	baseDir = "../../..",
-	sharedDir = baseDir + "/node-common"
-	sharedHandlerDir = sharedDir + "/handlers",
-	utils = require(sharedHandlerDir + "/util/common.js");
+const baseDir = '../../..';
+const sharedDir = `${baseDir}/node-common`;
+const sharedHandlerDir = `${sharedDir}/handlers`;
+const utils = require(`${sharedHandlerDir}/util/common.js`);
 
 const languages = {
-	fromValue : function(args) {
-		const 
-			instance = this, 
-			defValue = instance.EN_US,
-			language = args.language;
+  fromValue(args) {
+    const instance = this;
+    const defValue = instance.EN_US;
+    const language = args.language;
 
-		if (String.isInstance(language)) {
-			const 
-				keys = utils.getKeys(instance),
-				
-				filtered = keys
-					.map(key => instance[key])
-					.filter(lang => lang && lang.value == language);
+    if (String.isInstance(language)) {
+      const keys = utils.getKeys(instance);
 
-			return filtered[0] || defValue;
-		} else {
-			Error.debugException();
-			return defValue;
-		}
-	},
+      const filtered = keys
+        .map(key => instance[key])
+        .filter(lang => lang && lang.value === language);
 
-	EN_US : {
-		value : "en-us"
-	},
+      return filtered[0] || defValue;
+    }
 
-	VI_VN : {
-		value : "vi-vn"
-	}
+    Error.debugException();
+    return defValue;
+  },
+
+  EN_US: {
+    value: 'en_us',
+  },
+
+  VI_VN: {
+    value: 'vi_vn',
+  },
 };
 
 module.exports = languages;

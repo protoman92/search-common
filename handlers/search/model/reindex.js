@@ -1,5 +1,6 @@
-const sharedSearchDir = __dirname;
-const Index = require(`${sharedSearchDir}/index.js`);
+const {
+  Index,
+} = require('..')();
 
 function Reindex() {
   /**

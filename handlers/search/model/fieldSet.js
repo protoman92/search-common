@@ -1,15 +1,9 @@
 const baseDir = '../../../..';
 const sharedDir = `${baseDir}/node-common`;
 const sharedHandlerDir = `${sharedDir}/handlers`;
-const sharedSearchDir = '..';
 
 const languages = require(`${sharedDir}/public/localization/languages.js`);
 const utils = require(`${sharedHandlerDir}/util/common.js`);
-const Analyzer = require(`${sharedSearchDir}/analyzer.js`);
-const AnalyzerSet = require(`${sharedSearchDir}/default/analyzerSet.js`);
-const Field = require(`${sharedSearchDir}/field.js`);
-const Tokenizer = require(`${sharedSearchDir}/tokenizer.js`);
-const TokenFilter = require(`${sharedSearchDir}/tokenFilter.js`);
 
 /* Default field sets for text fields */
 function FieldSet() {}
@@ -29,6 +23,11 @@ FieldSet.prototype.fields = function () {
 };
 
 FieldSet.autocomplete = function (args) {
+  const {
+    AnalyzerSet,
+    Field,
+  } = require('..')();
+
   const fieldSet = new FieldSet();
   const fdConst = FieldSet.Constant;
   const azConst = AnalyzerSet.Constant;
@@ -46,6 +45,8 @@ FieldSet.autocomplete = function (args) {
 };
 
 FieldSet.keyword = function (args) {
+  const { Field } = require('..')();
+
   const fieldSet = new FieldSet();
   const fdConst = FieldSet.Constant;
 
@@ -59,10 +60,14 @@ FieldSet.keyword = function (args) {
 };
 
 FieldSet.fromLanguage = function (args) {
+  const {
+    AnalyzerSet,
+    Field,
+  } = require('..')();
+
   const fieldSet = new FieldSet();
 
   if (args && args.language) {
-    const fdConst = FieldSet.Constant;
     const azConst = AnalyzerSet.Constant;
     const indexMode = Field.IndexMode.ANALYZED.value;
     const language = args.language;

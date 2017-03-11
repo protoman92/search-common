@@ -1,14 +1,14 @@
-const baseDir = '../../..';
+const baseDir = '../../../..';
 const sharedDir = `${baseDir}/node-common`;
 const sharedHandlerDir = `${sharedDir}/handlers`;
 const sharedUtilDir = `${sharedHandlerDir}/util`;
-const sharedSearchDir = __dirname;
-const search = require(`${sharedSearchDir}/search.js`);
+const sharedSearchDir = '..';
 const typeChecker = require(`${sharedUtilDir}/type.js`);
 const utils = require(`${sharedUtilDir}/common.js`);
-const Analyzer = require(`${sharedSearchDir}/analyzer.js`);
 
 function Field() {
+  const { Analyzer } = require(sharedSearchDir)();
+
   /**
    * The field's name.
    * @type {String} The field's name.
@@ -84,7 +84,8 @@ Field.IndexMode = {
      * to 'true' (Boolean) in 5.x.
      */
     value: (function () {
-      return search.isVersion5x() ? true : 'analyzed';
+      const { Client } = require(sharedSearchDir)();
+      return Client.isVersion5x() ? true : 'analyzed';
     }()),
   },
 
@@ -94,7 +95,8 @@ Field.IndexMode = {
      * to 'false' (Boolean) in 5.x.
      */
     value: (function () {
-      return search.isVersion5x() ? false : 'not_analyzed';
+      const { Client } = require(sharedSearchDir)();
+      return Client.isVersion5x() ? false : 'not_analyzed';
     }()),
   },
 
@@ -160,11 +162,12 @@ Field.Type = {
   KEYWORD: {
     value: 'keyword',
 
-		/**
-		 * Keyword field does not exist in version 2.x.
-		 */
+    /**
+     * Keyword field does not exist in version 2.x.
+     */
     raw: (function () {
-      return search.isVersion5x() ? 'keyword' : 'string';
+      const { Client } = require(sharedSearchDir)();
+      return Client.isVersion5x() ? 'keyword' : 'string';
     }()),
   },
 
@@ -175,7 +178,8 @@ Field.Type = {
      * Text field does not exist in version 2.x.
      */
     raw: (function () {
-      return search.isVersion5x() ? 'text' : 'string';
+      const { Client } = require(sharedSearchDir)();
+      return Client.isVersion5x() ? 'text' : 'string';
     }()),
 
     isAnalyzableField: true,
@@ -231,6 +235,7 @@ Field.prototype.setIndexAnalyzer = function (analyzer) {
   if (String.isInstance(analyzer)) {
     this.indexAnalyzer = analyzer;
   } else if (Object.isInstance(analyzer)) {
+    const { Analyzer } = require(sharedSearchDir)();
     return this.setIndexAnalyzer(analyzer[Analyzer.NAME_KEY]);
   }
 
@@ -241,6 +246,7 @@ Field.prototype.setSearchAnalyzer = function (analyzer) {
   if (String.isInstance(analyzer)) {
     this.searchAnalyzer = analyzer;
   } else if (Object.isInstance(analyzer)) {
+    const { Analyzer } = require(sharedSearchDir)();
     return this.setSearchAnalyzer(analyzer[Analyzer.NAME_KEY]);
   }
 
@@ -325,8 +331,8 @@ Field.prototype.hasAllRequiredInformation = function () {
 };
 
 Field.prototype.json = function () {
-  let json = {},
-    inner = {};
+  const json = {};
+  const inner = {};
 
   const type = Field.Type.fromValue(this.getType());
 

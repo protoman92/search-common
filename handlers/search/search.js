@@ -9,13 +9,6 @@ const sharedSearchDir = __dirname;
 
 const utils = require(`${sharedUtilDir}/common.js`);
 const env = require(`${sharedUtilDir}/environment.js`);
-const Index = require(`${sharedSearchDir}/index.js`);
-const Mapping = require(`${sharedSearchDir}/mapping.js`);
-const Params = require(`${sharedSearchDir}/params.js`);
-const Reindex = require(`${sharedSearchDir}/reindex.js`);
-const SearchItem = require(`${sharedSearchDir}/searchItem.js`);
-const SearchResult = require(`${sharedSearchDir}/searchResult.js`);
-const Sort = require(`${sharedSearchDir}/sort.js`);
 
 let client;
 const main = exports;
@@ -34,9 +27,9 @@ exports.MAX_SEARCH_PAGE_SIZE = 10000;
 exports.currentVersion = function () {
   if (env.isDebugging()) {
     return process.env.ELASTICSEARCH_DEBUG_VERSION;
-  } else {
-    return process.env.ELASTICSEARCH_RELEASE_VERSION;
   }
+
+  return process.env.ELASTICSEARCH_RELEASE_VERSION;
 };
 
 /**
@@ -112,6 +105,8 @@ exports.checkAvailabilityObservable = function () {
  */
 exports.createIndexesObservable = function (args) {
   if (client && args && Array.isInstance(args.index)) {
+    const { Index } = require(sharedSearchDir)();
+
     return rx.Observable.from(args.index)
       .filter(index => Index.isInstance(index))
       .filter(index => index.hasAllRequiredInformation())
@@ -160,6 +155,7 @@ exports.updateAliasesObservable = function (args) {
     (Array.isInstance(args.oldIndex, args.newIndex)) &&
     (args.oldIndex.length && args.newIndex.length) &&
     (Index.isInstance(args.oldIndex[0], args.newIndex[0]))) {
+    const { Index } = require(sharedSearchDir)();
     const oldIndex = args.oldIndex;
     const newIndex = args.newIndex;
     const update = { remove: oldIndex, add: newIndex };
@@ -321,6 +317,8 @@ exports.getDocumentObservable = function (args) {
  * @return {rx.Observable} An Observable object.
  */
 exports.updateDocumentObservable = function (args) {
+  const { Params } = require(sharedSearchDir)();
+
   if (client && args && args.id && String.isInstance(args[Params.ID_KEY])) {
     let update = args;
 
@@ -343,9 +341,8 @@ exports.updateDocumentObservable = function (args) {
  * @return {rx.Observable} An Observable object.
  */
 exports.bulkUpdateObservable = function (args) {
-  const client = main.client();
-
   if (client && args && args.body && Array.isInstance(args.body)) {
+    const { Params } = require(sharedSearchDir)();
     const newArgs = utils.clone(args);
     let body;
 
@@ -367,7 +364,8 @@ exports.bulkUpdateObservable = function (args) {
 };
 
 /**
- * Search for documents with query or filter
+ * Search for documents with query or filter. The result will be wrapped in
+ * a {@link SearchResult} object.
  * @param  {object} args This parameter must contain the update body. The
  * index and type keys are optional - if they are not specified, ElasticSearch
  * will search all indexes/types. This is to accommodate indexes with
@@ -376,6 +374,7 @@ exports.bulkUpdateObservable = function (args) {
  */
 exports.searchDocumentObservable = function (args) {
   if (client && args) {
+    const { SearchResult, Sort } = require(sharedSearchDir)();
     const sort = (args.body || {}).sort;
     const newArgs = utils.clone(args);
 
@@ -432,6 +431,7 @@ exports.scrollDocumentsObservable = function (args) {
      * duration, e.g. '30s', '30m', '30h'.
      */
     (args.scroll.match(/\d+(s|m|h){1}$/))) {
+    const { SearchResult } = require(sharedSearchDir)();
     const scrollDuration = args.scroll;
 
     /**
@@ -491,6 +491,8 @@ exports.scrollDocumentsObservable = function (args) {
  */
 exports.transferDataObservable = function (args) {
   if (client && args) {
+    const { Params, Reindex } = require(sharedSearchDir)();
+
     return rx.Observable.just(args)
       .flatMap(args => rx.Observable
         .from(Reindex.fromIndexArrays(args))
@@ -642,6 +644,8 @@ exports.getAllTypesObservable = function (args) {
  */
 exports.getMappingsObservable = function (args) {
   if (client) {
+    const { Mapping } = require(sharedSearchDir)();
+
     return rx.Observable
       .fromPromise(client.indices.getMapping(args))
       .map((value) => {
@@ -691,7 +695,8 @@ exports.autocompleteSearchEngine = function (args) {
      * so onError must be inserted before onErrorReturn() to catch the
      * error and handle it appropriately.
      */
-    (Function.isInstance(args.onResult, args.onError)))	{
+    (Function.isInstance(args.onResult, args.onError))) {
+    const { SearchResult } = require(sharedSearchDir);
     const engine = new rx.Subject();
 
     const observable = engine
@@ -717,9 +722,9 @@ exports.autocompleteSearchEngine = function (args) {
         .onErrorReturn(SearchResult.EMPTY))
         .doOnNext((val) => {
           args.onResult(val);
-        }),
+        });
 
-      subscription = observable.subscribe();
+    const subscription = observable.subscribe();
 
     return {
       search(args) {

@@ -1,4 +1,4 @@
-const baseDir = '../../..';
+const baseDir = '../../../..';
 const sharedDir = `${baseDir}/node-common`;
 const sharedHandlerDir = `${sharedDir}/handlers`;
 const typeChecker = require(`${sharedHandlerDir}/util/type.js`);
