@@ -21,6 +21,32 @@ FieldSet.prototype.fields = function () {
     .filter(field => field)
     .filter(field => field.hasAllRequiredInformation());
 };
+/**
+ * Get a list of language fields for a single field name. This list is based
+ * on an {@link Array} of language codes, each of which is appended to the
+ * end of the field name.
+ * @param  {object} args This parameter must contain the language and name
+ * keys. The language key represents an Array of language codes, or a single
+ * {@link String}
+ * @return {Array} An Array of field names.
+ */
+FieldSet.fieldNameFromLanguage = function (args) {
+  if (args && args.language && args.name && String.isInstance(args.name)) {
+    const name = args.name;
+    let supported;
+
+    if (Array.isInstance(args.language)) {
+      supported = args.language;
+    } else {
+      supported = [args.language];
+    }
+
+    return supported.map(lang => [name, lang.toLowerCase()].join('_'));
+  }
+
+  Error.debugException(args);
+  return [];
+};
 
 FieldSet.autocomplete = function (args) {
   const {

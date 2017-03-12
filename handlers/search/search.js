@@ -111,7 +111,7 @@ exports.createIndexesObservable = function (args) {
       .filter(index => Index.isInstance(index))
       .filter(index => index.hasAllRequiredInformation())
       .flatMap(index => rx.Observable
-        .just({ index: index.getName() })
+        .just({ index: index[Index.NAME_KEY] })
         .flatMap(params => client.indices.exists(params))
         .filter(exists => !exists)
         .flatMap(exists => client.indices.create(index.json())),
@@ -130,12 +130,14 @@ exports.createIndexesObservable = function (args) {
  */
 exports.deleteIndexesObservable = function (args) {
   if (client && args) {
+    const { Index } = require(sharedSearchDir)();
+
     return rx.Observable.just(args.index)
       .filter(index => Array.isInstance(index))
-      .map(index => index.map(index => index[Index.NAME_KEY]))
+      .map(indexes => indexes.map(index => index[Index.NAME_KEY]))
       .defaultIfEmpty('_all')
       .map(index => ({ index }))
-      .flatMap(args => client.indices.delete(args));
+      .flatMap(deleteArgs => client.indices.delete(deleteArgs));
   }
 
   Error.debugException(args);
@@ -150,12 +152,13 @@ exports.deleteIndexesObservable = function (args) {
  * @return {rx.Observable} An Observable object.
  */
 exports.updateAliasesObservable = function (args) {
+  const { Index } = require(sharedSearchDir)();
+
   if
     (client && args &&
     (Array.isInstance(args.oldIndex, args.newIndex)) &&
     (args.oldIndex.length && args.newIndex.length) &&
     (Index.isInstance(args.oldIndex[0], args.newIndex[0]))) {
-    const { Index } = require(sharedSearchDir)();
     const oldIndex = args.oldIndex;
     const newIndex = args.newIndex;
     const update = { remove: oldIndex, add: newIndex };
@@ -170,22 +173,17 @@ exports.updateAliasesObservable = function (args) {
             .filter(index => index && Index.isInstance(index))
             .flatMap(index => rx.Observable
               .fromPromise(client.indices.exists({
-                index: index.getName(),
+                index: index[Index.NAME_KEY],
               }))
               .filter(exists => exists)
-              .map(exists => [
-                index.getIndexAlias(),
-                index.getSearchAlias(),
+              .map(() => [
+                index[Index.INDEX_ALIAS_KEY],
+                index[Index.SEARCH_ALIAS_KEY],
               ])
               .flatMap(aliases => rx.Observable.from(aliases))
               .map((alias) => {
                 const json = {};
-
-                json[action] = {
-                  index: index.getName(),
-                  alias,
-                };
-
+                json[action] = { index: index[Index.NAME_KEY], alias };
                 return json;
               })));
       })
@@ -212,8 +210,8 @@ exports.updateAliasesObservable = function (args) {
 exports.supplyIndexAndTypeObservable = function (args) {
   let indexObservable;
   let typeObservableFcn;
-
   const index = (args || {}).index || undefined;
+  const type = (args || {}).type || undefined;
 
   if (Array.isInstance(index)) {
     indexObservable = rx.Observable.from(index);
@@ -221,36 +219,31 @@ exports.supplyIndexAndTypeObservable = function (args) {
     indexObservable = rx.Observable.just(index);
   } else {
     indexObservable = main.getAllIndexesAndAliasesObservable(args)
-      .map(index => utils.getKeys(index))
-      .flatMap(index => rx.Observable.from(index));
+      .map(indexes => utils.getKeys(indexes))
+      .flatMap(indexes => rx.Observable.from(indexes));
+  }
+
+  if (Array.isInstance(type)) {
+    typeObservableFcn = () => rx.Observable.from(type);
+  } else if (type && String.isInstance(type)) {
+    typeObservableFcn = () => rx.Observable.just(type);
+  } else {
+    typeObservableFcn = typeArgs => main
+      .getAllTypesObservable(typeArgs)
+      .map(types => utils.getKeys(types))
+      .flatMap(types => rx.Observable.from(types));
   }
 
   return rx.Observable.just(args)
-    .flatMap(args => indexObservable
-      .map(index => ({ index }))
-      .flatMap((indexArgs) => {
-        const type = (args || {}).type || undefined;
-
-        if (Array.isInstance(type)) {
-          typeObservableFcn = args => rx.Observable.from(type);
-        } else if (type && String.isInstance(type)) {
-          typeObservableFcn = args => rx.Observable.just(type);
-        } else {
-          typeObservableFcn = args => main
-            .getAllTypesObservable(args)
-            .map(types => utils.getKeys(types))
-            .flatMap(types => rx.Observable.from(types));
-        }
-
-        return typeObservableFcn(indexArgs)
-          .map((type) => {
-            const newArgs = utils.clone(args);
-            newArgs.index = indexArgs.index;
-            newArgs.type = type;
-            return newArgs;
-          });
-      }),
-    );
+    .flatMap(originArgs => indexObservable
+      .map(newIndex => ({ index: newIndex }))
+      .flatMap(indexArgs => typeObservableFcn(indexArgs)
+        .map((newType) => {
+          const newArgs = utils.clone(originArgs);
+          newArgs.index = indexArgs.index;
+          newArgs.type = newType;
+          return newArgs;
+        })));
 };
 
 /**
@@ -265,7 +258,7 @@ exports.indexDocumentObservable = function (args) {
     return main.checkAvailabilityObservable()
       .filter(available => available)
       .defaultIfEmpty(false)
-      .flatMap(available => client.index(args));
+      .flatMap(() => client.index(args));
   }
 
   Error.debugException(args);
@@ -282,7 +275,7 @@ exports.indexDocumentObservable = function (args) {
 exports.deleteDocumentObservable = function (args) {
   if (client && args) {
     return main.supplyIndexAndTypeObservable(args)
-      .flatMap(args => client.delete(args));
+      .flatMap(indexTypeArgs => client.delete(indexTypeArgs));
   }
 
   Error.debugException(args);
@@ -298,6 +291,8 @@ exports.deleteDocumentObservable = function (args) {
  */
 exports.getDocumentObservable = function (args) {
   if (client && args && args.id && String.isInstance(args.id)) {
+    const { SearchItem } = require(sharedSearchDir)();
+
     return main.supplyIndexAndTypeObservable(args)
       .flatMap(args => client.get(args))
       .map(data => SearchItem.newBuilder()
@@ -327,7 +322,7 @@ exports.updateDocumentObservable = function (args) {
     }
 
     return main.supplyIndexAndTypeObservable(update)
-      .flatMap(args => client.update(args));
+      .flatMap(updateArgs => client.update(updateArgs));
   }
 
   Error.debugException(args);
@@ -375,7 +370,7 @@ exports.bulkUpdateObservable = function (args) {
 exports.searchDocumentObservable = function (args) {
   if (client && args) {
     const { SearchResult, Sort } = require(sharedSearchDir)();
-    const sort = (args.body || {}).sort;
+    const sortBody = (args.body || {}).sort;
     const newArgs = utils.clone(args);
 
     /**
@@ -383,13 +378,13 @@ exports.searchDocumentObservable = function (args) {
      * objects. If this is the case, we need to call .json() to convert
      * the object(s) into the correct search format.
      */
-    if (sort) {
+    if (sortBody) {
       let sorts = [];
 
-      if (Sort.isInstance(sort)) {
-        sorts = [sort];
-      } else if (Array.isInstance(sort) && Sort.isInstance(sort[0])) {
-        sorts = sort;
+      if (Sort.isInstance(sortBody)) {
+        sorts = [sortBody];
+      } else if (Array.isInstance(sortBody) && Sort.isInstance(sortBody[0])) {
+        sorts = sortBody;
       }
 
       const newSorts = sorts
@@ -403,7 +398,7 @@ exports.searchDocumentObservable = function (args) {
     }
 
     return rx.Observable.just(newArgs)
-      .flatMap(args => client.search(args))
+      .flatMap(searchArgs => client.search(searchArgs))
       .map(data => SearchResult.newBuilder()
         .withSearchResult(data)
         .build()
@@ -443,16 +438,16 @@ exports.scrollDocumentsObservable = function (args) {
      * scroll method.
      * @return {rx.Observable} An Observable object.
      */
-    const scrollUntilDone = function (result, args) {
+    const scrollUntilDone = function (result, scrollArgs) {
       let source;
 
       if (result) {
         source = rx.Observable.fromPromise(client.scroll({
-          scrollId: result.scrollId,
+          scrollId: result[SearchResult.SCROLL_ID_KEY],
           scroll: scrollDuration,
         }));
       } else {
-        source = rx.Observable.fromPromise(client.search(args));
+        source = rx.Observable.fromPromise(client.search(scrollArgs));
       }
 
       return source
@@ -460,17 +455,21 @@ exports.scrollDocumentsObservable = function (args) {
           .withSearchResult(data)
           .build()
           .json())
-        .filter(result => result.items && result.items.length)
-        .emitThenResume((newResult, obs) => {
-          if (result && result.scrollId != newResult.scrollId) {
-            client.clearScroll({ scrollId: result.scrollId });
+        .filter(newResult => newResult.hits && newResult.hits.length)
+        .emitThenResume((newResult) => {
+          const scrollKey = SearchResult.SCROLL_ID_KEY;
+
+          if (result && result[scrollKey] !== newResult[scrollKey]) {
+            client.clearScroll({ scrollId: result[scrollKey] });
           }
 
-          return scrollUntilDone(newResult, args);
+          return scrollUntilDone(newResult, scrollArgs);
         })
         .doOnCompleted(() => {
-          if (result && result.scrollId) {
-            client.clearScroll({ scrollId: result.scrollId });
+          const scrollKey = SearchResult.SCROLL_ID_KEY;
+
+          if (result && result[scrollKey]) {
+            client.clearScroll({ scrollId: result[scrollKey] });
           }
         });
     };
@@ -491,11 +490,11 @@ exports.scrollDocumentsObservable = function (args) {
  */
 exports.transferDataObservable = function (args) {
   if (client && args) {
-    const { Params, Reindex } = require(sharedSearchDir)();
+    const { Params, Reindex, SearchItem } = require(sharedSearchDir)();
 
     return rx.Observable.just(args)
-      .flatMap(args => rx.Observable
-        .from(Reindex.fromIndexArrays(args))
+      .flatMap(reindexArgs => rx.Observable
+        .from(Reindex.fromIndexArrays(reindexArgs))
         .flatMap(reindex => main
           .scrollDocumentsObservable({
             index: reindex[Reindex.OLD_INDEX_KEY],
@@ -503,13 +502,13 @@ exports.transferDataObservable = function (args) {
             body: reindex[Reindex.SCROLL_QUERY_KEY],
           })
           .flatMap(result => main.bulkUpdateObservable({
-            body: result.items
+            body: result.hits
               .map(item => Params.BulkIndex.newBuilder()
                 .withIndex(reindex[Reindex.NEW_INDEX_KEY])
-                .withType(item.type)
-                .withId(item.id)
-                .withUpdate(item.data)
-                .withParent(item.parent)
+                .withType(item[SearchItem.TYPE_KEY])
+                .withId(item[SearchItem.ID_KEY])
+                .withUpdate(item[SearchItem.DATA_KEY])
+                .withParent(item[SearchItem.PARENT_KEY])
                 .build()),
           }))));
   }
@@ -531,30 +530,30 @@ exports.reindexObservable = function (args) {
     (Array.isInstance(args.oldIndex, args.newIndex)) &&
     (args.oldIndex.length && args.newIndex.length)) {
     return rx.Observable.just(args)
-      .flatMap((args) => {
-        const oldIndex = args.oldIndex;
-        const newIndex = args.newIndex;
+      .flatMap((reindexArgs) => {
+        const oldIndex = reindexArgs.oldIndex;
+        const newIndex = reindexArgs.newIndex;
 
         return rx.Observable.just(newIndex)
           .flatMapIfSatisfied(
-            () => Boolean.cast(args.createNewIndexes),
+            () => Boolean.cast(reindexArgs.createNewIndexes),
 
             val => main.createIndexesObservable({ index: val }),
           )
           .flatMapIfSatisfied(
-            () => Boolean.cast(args.transferData),
+            () => Boolean.cast(reindexArgs.transferData),
 
             () => main
-              .transferDataObservable(args)
+              .transferDataObservable(reindexArgs)
               .toArray(),
           )
           .flatMapIfSatisfied(
-            () => Boolean.cast(args.updateAliases),
+            () => Boolean.cast(reindexArgs.updateAliases),
 
-            () => main.updateAliasesObservable(args),
+            () => main.updateAliasesObservable(reindexArgs),
           )
           .flatMapIfSatisfied(
-            () => Boolean.cast(args.removeOldIndexes),
+            () => Boolean.cast(reindexArgs.removeOldIndexes),
 
             () => main.deleteIndexesObservable({ index: oldIndex }),
           );
@@ -583,7 +582,7 @@ exports.getAllIndexesAndAliasesObservable = function (args) {
       .map(index => index.split(' '))
       .filter(index => index[0])
       .map(index => ({ index: index[0], alias: index[1] }))
-      .reduce((acc, x, idx, obs) => {
+      .reduce((acc, x) => {
         const index = x.index;
         const alias = x.alias;
         const value = acc[index];
@@ -727,8 +726,8 @@ exports.autocompleteSearchEngine = function (args) {
     const subscription = observable.subscribe();
 
     return {
-      search(args) {
-        engine.onNext(args);
+      search(searchArgs) {
+        engine.onNext(searchArgs);
       },
 
       stop() {

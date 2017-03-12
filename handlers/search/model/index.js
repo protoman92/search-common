@@ -323,6 +323,8 @@ Index.newBuilder = function () {
   return Index.Builder();
 };
 
+Index.INDEX_ALIAS_KEY = 'indexAlias';
 Index.NAME_KEY = 'name';
 Index.REINDEX_SCROLL_QUERY_KEY = 'reindexScrollQuery';
+Index.SEARCH_ALIAS_KEY = 'searchAlias';
 module.exports = Index;

@@ -1,8 +1,3 @@
-const baseDir = '../../../..';
-const sharedDir = `${baseDir}/node-common`;
-const sharedHandlerDir = `${sharedDir}/handlers`;
-const sharedSearchDir = __dirname;
-
 const {
   SearchItem,
 } = require('..')();
@@ -12,13 +7,13 @@ function SearchResult() {
    * The time it took to get the results.
    * @type {Number} Time taken.
    */
-  this.timeTaken = 0;
+  this.took = 0;
 
   /**
    * An Array of SearchItem.
    * @type {Array} An Array of SearchItem.
    */
-  this.items = [];
+  this.hits = [];
 
   /**
    * An Aggregation object.
@@ -30,28 +25,28 @@ function SearchResult() {
    * The number of SearchItem.
    * @type {Number} The number of SearchItem.
    */
-  this.itemCount = 0;
+  this.total = 0;
 
   /**
    * The maximum score across all SearchItem objects.
    * @type {Number} The maximum score across all SearchItem objects.
    */
-  this.maxScore = 0;
+  this.max_score = 0;
 
   /**
    * The scroll id, if the scroll API is used.
    * @type {String} The scroll id.
    */
-  this.scrollId = '';
+  this._scroll_id = '';
 }
 
 SearchResult.prototype.setTimeTaken = function (timeTaken) {
-  this.timeTaken = parseInt(timeTaken, 10);
+  this.took = parseInt(timeTaken, 10);
   return this;
 };
 
 SearchResult.prototype.setItemCount = function (itemCount) {
-  this.itemCount = parseInt(itemCount, 10);
+  this.total = parseInt(itemCount, 10);
   return this;
 };
 
@@ -65,10 +60,8 @@ SearchResult.prototype.setAggregations = function (aggs) {
 
 SearchResult.prototype.setItems = function (items) {
   if (Array.isInstance(items) && items.length) {
-    this.items = items
-      .map(item => SearchItem.newBuilder()
-        .withSearchItem(item)
-        .build())
+    this.hits = items
+      .map(item => SearchItem.newBuilder().withSearchItem(item).build())
       .filter(item => item.hasAllRequiredInformation());
   }
 
@@ -76,24 +69,24 @@ SearchResult.prototype.setItems = function (items) {
 };
 
 SearchResult.prototype.setMaxScore = function (score) {
-  this.maxScore = parseFloat(score);
+  this.max_score = parseFloat(score);
   return this;
 };
 
 SearchResult.prototype.setScrollId = function (id) {
   if (id && String.isInstance(id)) {
-    this.scrollId = id;
+    this._scroll_id = id;
   }
 
   return this;
 };
 
 SearchResult.prototype.getTimeTaken = function () {
-  return this.timeTaken || 0;
+  return this.took || 0;
 };
 
 SearchResult.prototype.getItemCount = function () {
-  return this.itemCount || 0;
+  return this.total || 0;
 };
 
 SearchResult.prototype.getAggregations = function () {
@@ -101,15 +94,15 @@ SearchResult.prototype.getAggregations = function () {
 };
 
 SearchResult.prototype.getItems = function () {
-  return this.items || [];
+  return this.hits || [];
 };
 
 SearchResult.prototype.getMaxScore = function () {
-  return this.maxScore || 0;
+  return this.max_score || 0;
 };
 
 SearchResult.prototype.getScrollId = function () {
-  return this.scrollId || '';
+  return this._scroll_id || '';
 };
 
 SearchResult.prototype.json = function () {
@@ -134,12 +127,12 @@ SearchResult.Builder = function () {
         const hits = data.hits;
 
         return this
-          .withTimeTaken(data.took)
-          .withMaxScore(hits.max_score)
-          .withItemCount(hits.total)
-          .withAggregations(data.aggregations)
-          .withItems(hits.hits)
-          .withScrollId(data._scroll_id);
+          .withTimeTaken(data[SearchResult.TIME_TAKEN_KEY])
+          .withMaxScore(hits[SearchResult.MAX_SCORE_KEY])
+          .withItemCount(hits[SearchResult.ITEM_COUNT_KEY])
+          .withAggregations(data[SearchResult.AGGREGATION_KEY])
+          .withItems(hits[SearchResult.ITEMS_KEY])
+          .withScrollId(data[SearchResult.SCROLL_ID_KEY]);
       }
 
       return this;
@@ -186,10 +179,10 @@ SearchResult.newBuilder = function () {
 };
 
 SearchResult.AGGREGATION_KEY = 'aggregations';
-SearchResult.ITEM_COUNT_KEY = 'itemCount';
-SearchResult.ITEMS_KEY = 'items';
-SearchResult.MAX_SCORE_KEY = 'maxScore';
-SearchResult.SCROLL_ID_KEY = 'scrollId';
-SearchResult.TIME_TAKEN_KEY = 'timeTaken';
+SearchResult.ITEM_COUNT_KEY = 'total';
+SearchResult.ITEMS_KEY = 'hits';
+SearchResult.MAX_SCORE_KEY = 'max_score';
+SearchResult.SCROLL_ID_KEY = '_scroll_id';
+SearchResult.TIME_TAKEN_KEY = 'took';
 
 module.exports = SearchResult;
