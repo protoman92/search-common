@@ -18,6 +18,7 @@ exports.client = function () {
 };
 
 exports.MAX_SEARCH_PAGE_SIZE = 10000;
+exports.MIN_TIME_OUT = 30000;
 
 /**
  * We expect that our deployment will have two config vars called

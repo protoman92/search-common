@@ -1,7 +1,3 @@
-const {
-  SearchItem,
-} = require('..')();
-
 function SearchResult() {
   /**
    * The time it took to get the results.
@@ -38,15 +34,21 @@ function SearchResult() {
    * @type {String} The scroll id.
    */
   this._scroll_id = '';
+
+  /**
+   * Check whether the current search result is an inner hit, i.e. a side
+   * result of nested/parent-child queries.
+   */
+  this.innerHit = false;
 }
 
 SearchResult.prototype.setTimeTaken = function (timeTaken) {
-  this.took = parseInt(timeTaken, 10);
+  this.took = parseInt(timeTaken, 10) || 0;
   return this;
 };
 
 SearchResult.prototype.setItemCount = function (itemCount) {
-  this.total = parseInt(itemCount, 10);
+  this.total = parseInt(itemCount, 10) || 0;
   return this;
 };
 
@@ -60,8 +62,15 @@ SearchResult.prototype.setAggregations = function (aggs) {
 
 SearchResult.prototype.setItems = function (items) {
   if (Array.isInstance(items) && items.length) {
+    const { SearchItem } = require('..')();
+    const instance = this;
+
     this.hits = items
-      .map(item => SearchItem.newBuilder().withSearchItem(item).build())
+      .map(item => SearchItem
+        .newBuilder()
+        .withSearchItem(item)
+        .withInnerHitFlag(instance.isInnerHit())
+        .build())
       .filter(item => item.hasAllRequiredInformation());
   }
 
@@ -78,6 +87,11 @@ SearchResult.prototype.setScrollId = function (id) {
     this._scroll_id = id;
   }
 
+  return this;
+};
+
+SearchResult.prototype.setInnerHitFlag = function (flag) {
+  this.innerHit = Boolean.cast(flag);
   return this;
 };
 
@@ -103,6 +117,10 @@ SearchResult.prototype.getMaxScore = function () {
 
 SearchResult.prototype.getScrollId = function () {
   return this._scroll_id || '';
+};
+
+SearchResult.prototype.isInnerHit = function () {
+  return this.innerHit || false;
 };
 
 SearchResult.prototype.json = function () {
@@ -165,6 +183,11 @@ SearchResult.Builder = function () {
 
     withScrollId(id) {
       searchResult.setScrollId(id);
+      return this;
+    },
+
+    withInnerHitFlag(flag) {
+      searchResult.setInnerHitFlag(flag);
       return this;
     },
 

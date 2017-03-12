@@ -1,7 +1,12 @@
 const baseDir = '../../../..';
 const sharedDir = `${baseDir}/node-common`;
 const sharedHandlerDir = `${sharedDir}/handlers`;
+const sharedSearchDir = '..';
 const utils = require(`${sharedHandlerDir}/util/common.js`);
+
+const {
+  SearchResult,
+} = require(sharedSearchDir)();
 
 function SearchItem() {
   /**
@@ -45,6 +50,12 @@ function SearchItem() {
    * @type {object} The item's inner_hits.
    */
   this.inner_hits = {};
+
+  /**
+   * Check whether the current search item is an inner hit, i.e. a side
+   * result of nested/parent-child queries.
+   */
+  this.innerHit = false;
 }
 
 SearchItem.prototype.setIndex = function (index) {
@@ -93,10 +104,34 @@ SearchItem.prototype.setParent = function (type) {
 };
 
 SearchItem.prototype.setInnerHits = function (innerHits) {
-  if (innerHits) {
-    this.inner_hits = innerHits;
+  if (innerHits && Object.isInstance(innerHits)) {
+    const entries = utils.getEntries(innerHits);
+
+    /**
+     * The inner_hits object resemble the structure of a SearchResult
+     * object, so we can use SearchResult to construct inner_hits.
+     */
+    this.inner_hits = entries
+      .filter(entry => entry.length === 2 && entry[1].hits)
+      .map((entry) => {
+        const innerResult = {};
+
+        innerResult[entry[0]] = SearchResult
+          .newBuilder()
+          .withInnerHitFlag(true)
+          .withSearchResult(entry[1])
+          .build();
+
+        return innerResult;
+      })
+      .reduce((a, b) => Object.assign(a, b), {});
   }
 
+  return this;
+};
+
+SearchItem.prototype.setInnerHitFlag = function (flag) {
+  this.innerHit = Boolean.cast(flag);
   return this;
 };
 
@@ -128,9 +163,17 @@ SearchItem.prototype.getParent = function () {
   return this._parent || '';
 };
 
+SearchItem.prototype.isInnerHit = function () {
+  return this.innerHit || false;
+};
+
 SearchItem.prototype.hasAllRequiredInformation = function () {
   switch (true) {
-    case this.getIndex().isEmpty():
+    /**
+     * If this search result is an inner hit, it would not have the _index
+     * field.
+     */
+    case !this.isInnerHit() && this.getIndex().isEmpty():
     case this.getType().isEmpty():
     case this.getId().isEmpty():
       Error.debugException(this);
@@ -214,6 +257,11 @@ SearchItem.Builder = () => {
 
     withInnerHits(innerHits) {
       searchItem.setInnerHits(innerHits);
+      return this;
+    },
+
+    withInnerHitFlag(flag) {
+      searchItem.setInnerHitFlag(flag);
       return this;
     },
 

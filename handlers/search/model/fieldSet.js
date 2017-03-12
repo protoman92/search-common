@@ -11,6 +11,7 @@ function FieldSet() {}
 FieldSet.Constant = {
   AUTOCOMPLETE_FIELD_NAME: 'autocomplete',
   KEYWORD_FIELD_NAME: 'keyword',
+  LANGUAGE_FIELD_PREFIX: 'lang',
 };
 
 FieldSet.prototype.fields = function () {
@@ -41,7 +42,11 @@ FieldSet.fieldNameFromLanguage = function (args) {
       supported = [args.language];
     }
 
-    return supported.map(lang => [name, lang.toLowerCase()].join('_'));
+    return supported.map(lang => [
+      name,
+      FieldSet.Constant.LANGUAGE_FIELD_PREFIX,
+      lang.toLowerCase(),
+    ].join('_'));
   }
 
   Error.debugException(args);
@@ -97,12 +102,13 @@ FieldSet.fromLanguage = function (args) {
     const azConst = AnalyzerSet.Constant;
     const indexMode = Field.IndexMode.ANALYZED.value;
     const language = args.language;
+    const prefix = FieldSet.Constant.LANGUAGE_FIELD_PREFIX;
 
     const fromLanguage = function (language) {
       const lArgs = { language: language.toLowerCase() };
 
       return Field.newBuilder()
-        .withName(language)
+        .withName([prefix, language].join('_'))
         .withType(Field.Type.TEXT.value)
         .withIndexAnalyzer(azConst.INDEX.standardAnalyzer(lArgs))
         .withSearchAnalyzer(azConst.SEARCH.standardAnalyzer(lArgs))
