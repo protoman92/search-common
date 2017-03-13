@@ -1,56 +1,6 @@
-const baseDir = '../../../..';
-const sharedDir = `${baseDir}/node-common`;
-const sharedHandlerDir = `${sharedDir}/handlers`;
-const sharedSearchDir = __dirname;
-const utils = require(`${sharedHandlerDir}/util/common.js`);
+const { utils } = require('../../../../node-common/handlers/util');
 
-function Type() {
-  /**
-   * The name of the type.
-   * @type {String} The type's name.
-   */
-  this.name = '';
-
-  /**
-   * An array of Field items.
-   * @type {Array} An array of Field items.
-   */
-  this.fields = [];
-
-  /**
-   * Enable or disable the _all field. This field indexes values from all
-   * other fields into one big string.
-   * @type {Boolean} Whether to enable or disable _all.
-   */
-  this.allEnabled = false;
-
-  /**
-   * Enable or disable default 'include_in_all' for child fields.
-   * @type {Boolean} Enable or disable 'include_in_all' for child fields.
-   */
-  this.includeInAll = false;
-
-  /**
-   * Enable or disable dynamic mapping for this type. If set to strict,
-   * unknown fields, when indexed, will throw an Exception. We can set
-   * this mode to 'strict' at the type level, and set to true for certain
-   * fields.
-   * @type {object} true, false or 'strict'.
-   */
-  this.dynamicMode = Type.DynamicMode.NONE.value;
-
-  /**
-   * Enable or disable _source. _source contains the entire document.
-   * @type {Boolean} Whether to enable or disable _source.
-   */
-  this.sourceEnabled = true;
-
-  /**
-   * Specify a parent type to enable parent-child relationship.
-   * @type {String} The parent type.
-   */
-  this.parent = '';
-}
+function Type() {}
 
 Type.DynamicMode = {
   FULL: {
@@ -65,6 +15,52 @@ Type.DynamicMode = {
     value: 'strict',
   },
 };
+
+/**
+ * The name of the type.
+ * @type {String} The type's name.
+ */
+Type.prototype.name = '';
+
+/**
+ * An array of Field items.
+ * @type {Array} An array of Field items.
+ */
+Type.prototype.fields = [];
+
+/**
+ * Enable or disable the _all field. This field indexes values from all
+ * other fields into one big string.
+ * @type {Boolean} Whether to enable or disable _all.
+ */
+Type.prototype.allEnabled = false;
+
+/**
+ * Enable or disable default 'include_in_all' for child fields.
+ * @type {Boolean} Enable or disable 'include_in_all' for child fields.
+ */
+Type.prototype.includeInAll = false;
+
+/**
+ * Enable or disable dynamic mapping for this type. If set to strict,
+ * unknown fields, when indexed, will throw an Exception. We can set
+ * this mode to 'strict' at the type level, and set to true for certain
+ * fields.
+ * @type {object} true, false or 'strict'.
+ */
+Type.prototype.dynamicMode = Type.DynamicMode.NONE.value;
+
+/**
+ * Enable or disable _source. _source contains the entire document.
+ * @type {Boolean} Whether to enable or disable _source.
+ */
+Type.prototype.sourceEnabled = true;
+
+/**
+ * Specify a parent type to enable parent-child relationship.
+ * @type {String} The parent type.
+ */
+Type.prototype.parent = '';
 
 Type.prototype.setName = function (name) {
   if (String.isInstance(name) && name) {
@@ -229,7 +225,7 @@ Type.Builder = function () {
       const fields = [];
 
       if (data && data.properties) {
-        const Field = require(`${sharedSearchDir}/field.js`);
+        const { Field } = require('..')();
         const properties = data.properties;
         const keys = utils.getKeys(properties);
 

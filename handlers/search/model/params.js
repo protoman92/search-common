@@ -1,8 +1,7 @@
-const baseDir = '../../../..';
-const sharedDir = `${baseDir}/node-common`;
-const sharedHandlerDir = `${sharedDir}/handlers`;
-const typeChecker = require(`${sharedHandlerDir}/util/type.js`);
-const utils = require(`${sharedHandlerDir}/util/common.js`);
+const {
+  typeChecker,
+  utils,
+} = require('../../../../node-common/handlers/util');
 
 function Params() {}
 
@@ -12,7 +11,7 @@ Params.isInstance = function (...args) {
     value.getType,
     value.getId,
     value.json,
-	));
+  ));
 };
 
 function BaseParams() {

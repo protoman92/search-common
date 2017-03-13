@@ -1,21 +1,18 @@
-const baseDir = '../../../..';
-const sharedDir = `${baseDir}/node-common`;
-const sharedHandlerDir = `${sharedDir}/handlers`;
-const utils = require(`${sharedHandlerDir}/util/common.js`);
+const { utils } = require('../../../../node-common/handlers/util');
 
-function Aggregation() {
-  /**
-   * The aggregation's name.
-   * @type {String} The aggregation's name.
-   */
-  this.name = '';
+function Aggregation() {}
 
-  /**
-   * The number of documents processed by this Aggregation.
-   * @type {Number} The number of documents processed.
-   */
-  this.docCount = 0;
-}
+/**
+ * The aggregation's name.
+ * @type {String} The aggregation's name.
+ */
+Aggregation.prototype.name = '';
+
+/**
+ * The number of documents processed by this Aggregation.
+ * @type {Number} The number of documents processed.
+ */
+Aggregation.prototype.docCount = 0;
 
 Aggregation.prototype.setName = function (name) {
   if (name && String.isInstance(name)) {
@@ -26,7 +23,7 @@ Aggregation.prototype.setName = function (name) {
 };
 
 Aggregation.prototype.setDocCount = function (count) {
-  this.docCount = parseInt(count);
+  this.docCount = parseInt(count, 10);
   return this;
 };
 
@@ -74,11 +71,10 @@ Aggregation.Builder = function () {
 
     withAggregationData(data) {
       if (data) {
-        return this
-          .withDocCount(data.doc_count);
-      } else {
-        return this;
+        return this.withDocCount(data.doc_count);
       }
+
+      return this;
     },
 
     build() {

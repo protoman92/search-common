@@ -1,39 +1,36 @@
-const baseDir = '../../../..';
-const sharedDir = `${baseDir}/node-common`;
-const sharedHandlerDir = `${sharedDir}/handlers`;
-const utils = require(`${sharedHandlerDir}/util/common.js`);
+const { utils } = require('../../../../node-common/handlers/util');
 
-function Analyzer() {
-  /**
-   * The name of the Analyzer.
-   * @type {String} The name of the analyzer.
-   */
-  this.name = '';
+function Analyzer() {}
 
-  /**
-   * The Analyzer's type.
-   * @type {String} The analyzer type.
-   */
-  this.type = '';
+/**
+ * The name of the Analyzer.
+ * @type {String} The name of the analyzer.
+ */
+Analyzer.prototype.name = '';
 
-  /**
-   * The Analyzer's Tokenizer. Should be an object of type Tokenizer.
-   * @type {Object} The Analyzer's Tokenizer.
-   */
-  this.tokenizer = {};
+/**
+ * The Analyzer's type.
+ * @type {String} The analyzer type.
+ */
+Analyzer.prototype.type = '';
 
-  /**
-   * The Analyzer's Token Filters. Should be an Array of type TokenFilter.
-   * @type {Array} The Analyzer's Token Filters.
-   */
-  this.tokenFilters = [];
+/**
+ * The Analyzer's Tokenizer. Should be an object of type Tokenizer.
+ * @type {Object} The Analyzer's Tokenizer.
+ */
+Analyzer.prototype.tokenizer = {};
 
-  /**
-   * The Analyzer Char Filters. Should be an Array of type CharFilter.
-   * @type {Array} The Analyzer's Char Filters.
-   */
-  this.charFilters = [];
-}
+/**
+ * The Analyzer's Token Filters. Should be an Array of type TokenFilter.
+ * @type {Array} The Analyzer's Token Filters.
+ */
+Analyzer.prototype.tokenFilters = [];
+
+/**
+ * The Analyzer Char Filters. Should be an Array of type CharFilter.
+ * @type {Array} The Analyzer's Char Filters.
+ */
+Analyzer.prototype.charFilters = [];
 
 Analyzer.Constant = {
   ICU_ANALYZER: {

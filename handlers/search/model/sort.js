@@ -1,36 +1,9 @@
-const baseDir = '../../../..';
-const sharedDir = `${baseDir}/node-common`;
-const sharedHandlerDir = `${sharedDir}/handlers`;
-const sharedUtilDir = `${sharedHandlerDir}/util`;
-const typeChecker = require(`${sharedUtilDir}/type.js`);
-const utils = require(`${sharedUtilDir}/common.js`);
+const {
+  typeChecker,
+  utils,
+} = require('../../../../node-common/handlers/util');
 
-function Sort() {
-  /**
-   * The field to be sorted on.
-   * @type {String} The sorted field name.
-   */
-  this.field = '';
-
-  /**
-   * The sort order. Can be either ascending (asc) or descending (desc).
-   * @type {String} The sort order.
-   */
-  this.order = Sort.Order.ASCENDING.value;
-
-  /**
-   * The sort mode. Can be average (avg), minimum (min), maximum (max),
-   * summation (sum) or median (median).
-   * @type {String} The sort mode.
-   */
-  this.mode = Sort.Mode.AVERAGE.value;
-
-  /**
-   * Use with nested objects to identify where to sort from.
-   * @type {String} The sort's nested path.
-   */
-  this.nestedPath = '';
-}
+function Sort() {}
 
 Sort.Order = {
   allValues() {
@@ -105,6 +78,31 @@ Sort.Mode = {
     method: array => Math.sum(array),
   },
 };
+
+/**
+ * The field to be sorted on.
+ * @type {String} The sorted field name.
+ */
+Sort.prototype.field = '';
+
+/**
+ * The sort order. Can be either ascending (asc) or descending (desc).
+ * @type {String} The sort order.
+ */
+Sort.prototype.order = Sort.Order.ASCENDING.value;
+
+/**
+ * The sort mode. Can be average (avg), minimum (min), maximum (max),
+ * summation (sum) or median (median).
+ * @type {String} The sort mode.
+ */
+Sort.prototype.mode = Sort.Mode.AVERAGE.value;
+
+/**
+ * Use with nested objects to identify where to sort from.
+ * @type {String} The sort's nested path.
+ */
+Sort.prototype.nestedPath = '';
 
 Sort.prototype.setFieldName = function (field) {
   if (field && String.isInstance(field)) {

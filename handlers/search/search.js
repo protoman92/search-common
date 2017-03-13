@@ -1,14 +1,10 @@
 const elastic = require('elasticsearch');
 const rx = require('rx');
 
-const baseDir = '../../..';
-const sharedDir = `${baseDir}/node-common`;
-const sharedHandlerDir = `${sharedDir}/handlers`;
-const sharedUtilDir = `${sharedHandlerDir}/util`;
-const sharedSearchDir = __dirname;
-
-const utils = require(`${sharedUtilDir}/common.js`);
-const env = require(`${sharedUtilDir}/environment.js`);
+const {
+  environment: env,
+  utils,
+} = require('../../../node-common/handlers/util');
 
 let client;
 const main = exports;
@@ -106,7 +102,7 @@ exports.checkAvailabilityObservable = function () {
  */
 exports.createIndexesObservable = function (args) {
   if (client && args && Array.isInstance(args.index)) {
-    const { Index } = require(sharedSearchDir)();
+    const { Index } = require('.')();
 
     return rx.Observable.from(args.index)
       .filter(index => Index.isInstance(index))
@@ -131,7 +127,7 @@ exports.createIndexesObservable = function (args) {
  */
 exports.deleteIndexesObservable = function (args) {
   if (client && args) {
-    const { Index } = require(sharedSearchDir)();
+    const { Index } = require('.')();
 
     return rx.Observable.just(args.index)
       .filter(index => Array.isInstance(index))
@@ -153,7 +149,7 @@ exports.deleteIndexesObservable = function (args) {
  * @return {rx.Observable} An Observable object.
  */
 exports.updateAliasesObservable = function (args) {
-  const { Index } = require(sharedSearchDir)();
+  const { Index } = require('.')();
 
   if
     (client && args &&
@@ -292,7 +288,7 @@ exports.deleteDocumentObservable = function (args) {
  */
 exports.getDocumentObservable = function (args) {
   if (client && args && args.id && String.isInstance(args.id)) {
-    const { SearchItem } = require(sharedSearchDir)();
+    const { SearchItem } = require('.')();
 
     return main.supplyIndexAndTypeObservable(args)
       .flatMap(args => client.get(args))
@@ -313,7 +309,7 @@ exports.getDocumentObservable = function (args) {
  * @return {rx.Observable} An Observable object.
  */
 exports.updateDocumentObservable = function (args) {
-  const { Params } = require(sharedSearchDir)();
+  const { Params } = require('.')();
 
   if (client && args && args.id && String.isInstance(args[Params.ID_KEY])) {
     let update = args;
@@ -338,7 +334,7 @@ exports.updateDocumentObservable = function (args) {
  */
 exports.bulkUpdateObservable = function (args) {
   if (client && args && args.body && Array.isInstance(args.body)) {
-    const { Params } = require(sharedSearchDir)();
+    const { Params } = require('.')();
     const newArgs = utils.clone(args);
     let body;
 
@@ -370,7 +366,7 @@ exports.bulkUpdateObservable = function (args) {
  */
 exports.searchDocumentObservable = function (args) {
   if (client && args) {
-    const { SearchResult, Sort } = require(sharedSearchDir)();
+    const { SearchResult, Sort } = require('.')();
     const sortBody = (args.body || {}).sort;
     const newArgs = utils.clone(args);
 
@@ -427,7 +423,7 @@ exports.scrollDocumentsObservable = function (args) {
      * duration, e.g. '30s', '30m', '30h'.
      */
     (args.scroll.match(/\d+(s|m|h){1}$/))) {
-    const { SearchResult } = require(sharedSearchDir)();
+    const { SearchResult } = require('.')();
     const scrollDuration = args.scroll;
 
     /**
@@ -491,7 +487,7 @@ exports.scrollDocumentsObservable = function (args) {
  */
 exports.transferDataObservable = function (args) {
   if (client && args) {
-    const { Params, Reindex, SearchItem } = require(sharedSearchDir)();
+    const { Params, Reindex, SearchItem } = require('.')();
 
     return rx.Observable.just(args)
       .flatMap(reindexArgs => rx.Observable
@@ -644,7 +640,7 @@ exports.getAllTypesObservable = function (args) {
  */
 exports.getMappingsObservable = function (args) {
   if (client) {
-    const { Mapping } = require(sharedSearchDir)();
+    const { Mapping } = require('.')();
 
     return rx.Observable
       .fromPromise(client.indices.getMapping(args))
@@ -696,7 +692,7 @@ exports.autocompleteSearchEngine = function (args) {
      * error and handle it appropriately.
      */
     (Function.isInstance(args.onResult, args.onError))) {
-    const { SearchResult } = require(sharedSearchDir);
+    const { SearchResult } = require('.');
     const engine = new rx.Subject();
 
     const observable = engine

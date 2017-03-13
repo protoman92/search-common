@@ -1,9 +1,5 @@
-const baseDir = '../../../..';
-const sharedDir = `${baseDir}/node-common`;
-const sharedHandlerDir = `${sharedDir}/handlers`;
-
-const languages = require(`${sharedDir}/public/localization/languages.js`);
-const utils = require(`${sharedHandlerDir}/util/common.js`);
+const { languages } = require('../../../../node-common/public/localization');
+const { utils } = require('../../../../node-common/handlers/util');
 
 /* Analyzer sets comprise language-specific analyzers */
 function AnalyzerSet() {}

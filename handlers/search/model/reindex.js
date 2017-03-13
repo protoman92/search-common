@@ -2,29 +2,29 @@ const {
   Index,
 } = require('..')();
 
-function Reindex() {
-  /**
-   * The old index from which we are pulling data.
-   * @type {String} The old index name.
-   */
-  this.oldIndex = '';
+function Reindex() {}
 
-  /**
-   * The new index to which we are pushing data.
-   * @type {String} The new index name.
-   */
-  this.newIndex = '';
+/**
+ * The old index from which we are pulling data.
+ * @type {String} The old index name.
+ */
+Reindex.prototype.oldIndex = '';
 
-  /**
-   * The query that will be used for the initial scroll search.
-   * @type {Object}
-   */
-  this.scrollQuery = {
-    query: {
-      match_all: {},
-    },
-  };
-}
+/**
+ * The new index to which we are pushing data.
+ * @type {String} The new index name.
+ */
+Reindex.prototype.newIndex = '';
+
+/**
+ * The query that will be used for the initial scroll search.
+ * @type {Object}
+ */
+Reindex.prototype.scrollQuery = {
+  query: {
+    match_all: {},
+  },
+};
 
 Reindex.prototype.setOldIndex = function (index) {
   if (index && String.isInstance(index)) {

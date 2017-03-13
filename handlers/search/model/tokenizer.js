@@ -1,27 +1,6 @@
-const baseDir = '../../../..';
-const sharedDir = `${baseDir}/node-common`;
-const sharedHandlerDir = `${sharedDir}/handlers`;
-const utils = require(`${sharedHandlerDir}/util/common.js`);
+const { utils } = require('../../../../node-common/handlers/util');
 
-function Tokenizer() {
-  /**
-   * The Tokenizer's name.
-   * @type {String} The Tokenizer's name.
-   */
-  this.name = '';
-
-  /**
-   * The Tokenizer's type.
-   * @type {String} The Tokenizer's type.
-   */
-  this.type = '';
-
-  /**
-   * Additional settings for this Tokenizer.
-   * @type {Object} Additional settings.
-   */
-  this.additionalSettings = {};
-}
+function Tokenizer() {}
 
 Tokenizer.Default = function () {
   const defaults = {};
@@ -100,6 +79,24 @@ Tokenizer.Type = {
     value: 'keyword',
   },
 };
+
+/**
+ * The Tokenizer's name.
+ * @type {String} The Tokenizer's name.
+ */
+Tokenizer.prototype.name = '';
+
+/**
+ * The Tokenizer's type.
+ * @type {String} The Tokenizer's type.
+ */
+Tokenizer.prototype.type = '';
+
+/**
+ * Additional settings for this Tokenizer.
+ * @type {Object} Additional settings.
+ */
+Tokenizer.prototype.additionalSettings = {};
 
 Tokenizer.prototype.setName = function (name) {
   if (String.isInstance(name)) {

@@ -1,62 +1,58 @@
-const baseDir = '../../../..';
-const sharedDir = `${baseDir}/node-common`;
-const sharedHandlerDir = `${sharedDir}/handlers`;
-const sharedSearchDir = '..';
-const utils = require(`${sharedHandlerDir}/util/common.js`);
+const { utils } = require('../../../../node-common/handlers/util');
 
 const {
   SearchResult,
-} = require(sharedSearchDir)();
+} = require('..')();
 
-function SearchItem() {
-  /**
-   * The index that this document belongs to.
-   * @type {String} The item's index name.
-   */
-  this._index = '';
+function SearchItem() {}
 
-  /**
-   * The type that this document belongs to.
-   * @type {String} the item's type name.
-   */
-  this._type = '';
+/**
+ * The index that this document belongs to.
+ * @type {String} The item's index name.
+ */
+SearchItem.prototype._index = '';
 
-  /**
-   * The item's id.
-   * @type {String} The item's id.
-   */
-  this._id = '';
+/**
+ * The type that this document belongs to.
+ * @type {String} the item's type name.
+ */
+SearchItem.prototype._type = '';
 
-  /**
-   * The item's relevance score.
-   * @type {Number} The item's relevance score.
-   */
-  this._score = 0;
+/**
+ * The item's id.
+ * @type {String} The item's id.
+ */
+SearchItem.prototype._id = '';
 
-  /**
-   * The item's _source data.
-   * @type {Object} The item's _source data.
-   */
-  this._source = {};
+/**
+ * The item's relevance score.
+ * @type {Number} The item's relevance score.
+ */
+SearchItem.prototype._score = 0;
 
-  /**
-   * The item's _parent id.
-   * @type {String} The item's _parent type.
-   */
-  this._parent = '';
+/**
+ * The item's _source data.
+ * @type {Object} The item's _source data.
+ */
+SearchItem.prototype._source = {};
 
-  /**
-   * The item's inner_hits. Applicable with nested/parent-child queries.
-   * @type {object} The item's inner_hits.
-   */
-  this.inner_hits = {};
+/**
+ * The item's _parent id.
+ * @type {String} The item's _parent type.
+ */
+SearchItem.prototype._parent = '';
 
-  /**
-   * Check whether the current search item is an inner hit, i.e. a side
-   * result of nested/parent-child queries.
-   */
-  this.innerHit = false;
-}
+/**
+ * The item's inner_hits. Applicable with nested/parent-child queries.
+ * @type {object} The item's inner_hits.
+ */
+SearchItem.prototype.inner_hits = {};
+
+/**
+ * Check whether the current search item is an inner hit, i.e. a side
+ * result of nested/parent-child queries.
+ */
+SearchItem.prototype.innerHit = false;
 
 SearchItem.prototype.setIndex = function (index) {
   if (String.isInstance(index) && index) {

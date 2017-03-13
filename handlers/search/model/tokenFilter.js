@@ -1,27 +1,6 @@
-const baseDir = '../../../..';
-const sharedDir = `${baseDir}/node-common`;
-const sharedHandlerDir = `${sharedDir}/handlers`;
-const utils = require(`${sharedHandlerDir}/util/common.js`);
+const { utils } = require('../../../../node-common/handlers/util');
 
-function TokenFilter() {
-  /**
-   * The TokenFilter's name.
-   * @type {String} The TokenFilter's name.
-   */
-  this.name = '';
-
-  /**
-   * The TokenFilter's type.
-   * @type {String} The TokenFilter's type.
-   */
-  this.type = '';
-
-  /**
-   * Additional settings for this TokenFilter.
-   * @type {Object} Additional settings for this TokenFilter.
-   */
-  this.additionalSettings = {};
-}
+function TokenFilter() {}
 
 TokenFilter.Default = function () {
   const defaults = {};
@@ -189,6 +168,24 @@ TokenFilter.Type = {
     },
   },
 };
+
+/**
+ * The TokenFilter's name.
+ * @type {String} The TokenFilter's name.
+ */
+TokenFilter.prototype.name = '';
+
+/**
+ * The TokenFilter's type.
+ * @type {String} The TokenFilter's type.
+ */
+TokenFilter.prototype.type = '';
+
+/**
+ * Additional settings for this TokenFilter.
+ * @type {Object} Additional settings for this TokenFilter.
+ */
+TokenFilter.prototype.additionalSettings = {};
 
 TokenFilter.prototype.setName = function (name) {
   if (String.isInstance(name)) {

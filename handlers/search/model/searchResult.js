@@ -1,46 +1,46 @@
-function SearchResult() {
-  /**
-   * The time it took to get the results.
-   * @type {Number} Time taken.
-   */
-  this.took = 0;
+function SearchResult() {}
 
-  /**
-   * An Array of SearchItem.
-   * @type {Array} An Array of SearchItem.
-   */
-  this.hits = [];
+/**
+ * The time it took to get the results.
+ * @type {Number} Time taken.
+ */
+SearchResult.prototype.took = 0;
 
-  /**
-   * An Aggregation object.
-   * @type {Array} An Aggregation object.
-   */
-  this.aggregations = {};
+/**
+ * An Array of SearchItem.
+ * @type {Array} An Array of SearchItem.
+ */
+SearchResult.prototype.hits = [];
 
-  /**
-   * The number of SearchItem.
-   * @type {Number} The number of SearchItem.
-   */
-  this.total = 0;
+/**
+ * An Aggregation object.
+ * @type {Array} An Aggregation object.
+ */
+SearchResult.prototype.aggregations = {};
 
-  /**
-   * The maximum score across all SearchItem objects.
-   * @type {Number} The maximum score across all SearchItem objects.
-   */
-  this.max_score = 0;
+/**
+ * The number of SearchItem.
+ * @type {Number} The number of SearchItem.
+ */
+SearchResult.prototype.total = 0;
 
-  /**
-   * The scroll id, if the scroll API is used.
-   * @type {String} The scroll id.
-   */
-  this._scroll_id = '';
+/**
+ * The maximum score across all SearchItem objects.
+ * @type {Number} The maximum score across all SearchItem objects.
+ */
+SearchResult.prototype.max_score = 0;
 
-  /**
-   * Check whether the current search result is an inner hit, i.e. a side
-   * result of nested/parent-child queries.
-   */
-  this.innerHit = false;
-}
+/**
+ * The scroll id, if the scroll API is used.
+ * @type {String} The scroll id.
+ */
+SearchResult.prototype._scroll_id = '';
+
+/**
+ * Check whether the current search result is an inner hit, i.e. a side
+ * result of nested/parent-child queries.
+ */
+SearchResult.prototype.innerHit = false;
 
 SearchResult.prototype.setTimeTaken = function (timeTaken) {
   this.took = parseInt(timeTaken, 10) || 0;

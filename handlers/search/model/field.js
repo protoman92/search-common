@@ -1,81 +1,9 @@
-const baseDir = '../../../..';
-const sharedDir = `${baseDir}/node-common`;
-const sharedHandlerDir = `${sharedDir}/handlers`;
-const sharedUtilDir = `${sharedHandlerDir}/util`;
-const sharedSearchDir = '..';
-const typeChecker = require(`${sharedUtilDir}/type.js`);
-const utils = require(`${sharedUtilDir}/common.js`);
+const {
+  typeChecker,
+  utils,
+} = require('../../../../node-common/handlers/util');
 
-function Field() {
-  const { Analyzer } = require(sharedSearchDir)();
-
-  /**
-   * The field's name.
-   * @type {String} The field's name.
-   */
-  this.name = '';
-
-  /**
-   * Enable multifields if this object is not empty. This should be an Array
-   * of type Field.
-   * @type {Object} The additional fields to be added.
-   */
-  this.fields = [];
-
-  /**
-   * Whether or not this field is part of another field. If this is set to
-   * true, we need to disable certain settings, such as 'include_in_all'.
-   * @type {Boolean} Whether this is a multifield or not.
-   */
-  this.multifield = false;
-
-  /**
-   * Enable or disable 'include_in_all'.
-   * @type {Boolean} Enable or disable 'include_in_all'.
-   */
-  this.includeInAll = true;
-
-  /**
-   * The field's index mode. Either 'analyzed' or 'not_analyzed'.
-   * @type {String} The field's index mode.
-   */
-  this.indexMode = Field.IndexMode.NOT_ANALYZED.value;
-
-  /**
-   * The index analyzer to use. This analyzer will tokenize and filter
-   * incoming texts at index time. Only works with text fields.
-   * @type {String} The index analyzer to use.
-   */
-  this.indexAnalyzer = Analyzer.Type.SIMPLE.value;
-
-  /**
-   * The search analyzer to use. This field defaults to the index analyzer
-   * if not specified.
-   * @type {String} The search analyzer to use.
-   */
-  this.searchAnalyzer = Analyzer.Type.SIMPLE.value;
-
-  /**
-   * Whether or not to preserve separators. If this is set to false, a search
-   * for 'foof' may return 'Foo Fighters'.
-   * @type {Boolean} Enable or disable separator preservation.
-   */
-  this.preserveSeparator = true;
-
-  /**
-   * Whether or not to preserve position increments. If this is set to false
-   * and a stopword analyzer is used, a query for 'b' may match a field with
-   * 'The Beatles'
-   * @type {Boolean}
-   */
-  this.preservePositionIncrements = true;
-
-  /**
-   * The field's type.
-   * @type {String} The field's type.
-   */
-  this.type = Field.Type.TEXT.value;
-}
+function Field() {}
 
 Field.IndexMode = {
   ANALYZED: {
@@ -84,7 +12,7 @@ Field.IndexMode = {
      * to 'true' (Boolean) in 5.x.
      */
     value: (function () {
-      const { Client } = require(sharedSearchDir)();
+      const { Client } = require('..')();
       return Client.isVersion5x() ? true : 'analyzed';
     }()),
   },
@@ -95,7 +23,7 @@ Field.IndexMode = {
      * to 'false' (Boolean) in 5.x.
      */
     value: (function () {
-      const { Client } = require(sharedSearchDir)();
+      const { Client } = require('..')();
       return Client.isVersion5x() ? false : 'not_analyzed';
     }()),
   },
@@ -166,7 +94,7 @@ Field.Type = {
      * Keyword field does not exist in version 2.x.
      */
     raw: (function () {
-      const { Client } = require(sharedSearchDir)();
+      const { Client } = require('..')();
       return Client.isVersion5x() ? 'keyword' : 'string';
     }()),
   },
@@ -178,13 +106,80 @@ Field.Type = {
      * Text field does not exist in version 2.x.
      */
     raw: (function () {
-      const { Client } = require(sharedSearchDir)();
+      const { Client } = require('..')();
       return Client.isVersion5x() ? 'text' : 'string';
     }()),
 
     isAnalyzableField: true,
   },
 };
+
+/**
+ * The field's name.
+ * @type {String} The field's name.
+ */
+Field.prototype.name = '';
+
+/**
+ * Enable multifields if this object is not empty. This should be an Array
+ * of type Field.
+ * @type {Object} The additional fields to be added.
+ */
+Field.prototype.fields = [];
+
+/**
+ * Whether or not this field is part of another field. If this is set to
+ * true, we need to disable certain settings, such as 'include_in_all'.
+ * @type {Boolean} Whether this is a multifield or not.
+ */
+Field.prototype.multifield = false;
+
+/**
+ * Enable or disable 'include_in_all'.
+ * @type {Boolean} Enable or disable 'include_in_all'.
+ */
+Field.prototype.includeInAll = true;
+
+/**
+ * The field's index mode. Either 'analyzed' or 'not_analyzed'.
+ * @type {String} The field's index mode.
+ */
+Field.prototype.indexMode = Field.IndexMode.NOT_ANALYZED.value;
+
+/**
+ * The index analyzer to use. This analyzer will tokenize and filter
+ * incoming texts at index time. Only works with text fields.
+ * @type {String} The index analyzer to use.
+ */
+Field.prototype.indexAnalyzer = '';
+
+/**
+ * The search analyzer to use. This field defaults to the index analyzer
+ * if not specified.
+ * @type {String} The search analyzer to use.
+ */
+Field.prototype.searchAnalyzer = '';
+
+/**
+ * Whether or not to preserve separators. If this is set to false, a search
+ * for 'foof' may return 'Foo Fighters'.
+ * @type {Boolean} Enable or disable separator preservation.
+ */
+Field.prototype.preserveSeparator = true;
+
+/**
+ * Whether or not to preserve position increments. If this is set to false
+ * and a stopword analyzer is used, a query for 'b' may match a field with
+ * 'The Beatles'
+ * @type {Boolean}
+ */
+Field.prototype.preservePositionIncrements = true;
+
+/**
+ * The field's type.
+ * @type {String} The field's type.
+ */
+Field.prototype.type = Field.Type.TEXT.value;
 
 Field.prototype.setName = function (name) {
   if (String.isInstance(name) && name) {
@@ -235,7 +230,7 @@ Field.prototype.setIndexAnalyzer = function (analyzer) {
   if (String.isInstance(analyzer)) {
     this.indexAnalyzer = analyzer;
   } else if (Object.isInstance(analyzer)) {
-    const { Analyzer } = require(sharedSearchDir)();
+    const { Analyzer } = require('..')();
     return this.setIndexAnalyzer(analyzer[Analyzer.NAME_KEY]);
   }
 
@@ -246,7 +241,7 @@ Field.prototype.setSearchAnalyzer = function (analyzer) {
   if (String.isInstance(analyzer)) {
     this.searchAnalyzer = analyzer;
   } else if (Object.isInstance(analyzer)) {
-    const { Analyzer } = require(sharedSearchDir)();
+    const { Analyzer } = require('..')();
     return this.setSearchAnalyzer(analyzer[Analyzer.NAME_KEY]);
   }
 

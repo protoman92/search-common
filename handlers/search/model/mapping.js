@@ -1,25 +1,22 @@
-const baseDir = '../../../..';
-const sharedDir = `${baseDir}/node-common`;
-const sharedHandlerDir = `${sharedDir}/handlers`;
-const utils = require(`${sharedHandlerDir}/util/common.js`);
+const { utils } = require('../../../../node-common/handlers/util');
 
 const {
   Type,
 } = require('..')();
 
-function Mapping() {
-  /**
-   * The index to which this mapping is mapped.
-   * @type {String} The Mapping's index name.
-   */
-  this.index = '';
+function Mapping() {}
 
-  /**
-   * The types to be registered to this mapping.
-   * @type {Array} An Array of types.
-   */
-  this.types = [];
-}
+/**
+ * The index to which this mapping is mapped.
+ * @type {String} The Mapping's index name.
+ */
+Mapping.prototype.index = '';
+
+/**
+ * The types to be registered to this mapping.
+ * @type {Array} An Array of types.
+ */
+Mapping.prototype.types = [];
 
 Mapping.prototype.setIndex = function (index) {
   if (index && String.isInstance(index)) {

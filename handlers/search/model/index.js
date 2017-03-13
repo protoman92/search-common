@@ -1,67 +1,66 @@
-const baseDir = '../../../..';
-const sharedDir = `${baseDir}/node-common`;
-const sharedHandlerDir = `${sharedDir}/handlers`;
-const typeChecker = require(`${sharedHandlerDir}/util/type.js`);
-const utils = require(`${sharedHandlerDir}/util/common.js`);
+const {
+  typeChecker,
+  utils,
+} = require('../../../../node-common/handlers/util');
 
-function Index() {
-  /**
-   * The index's name.
-   * @type {String} The index's name.
-   */
-  this.name = '';
+function Index() {}
 
-  /**
-   * The number of shards to allocate to this index. This can't be updated
-   * unless we reindex with new settings.
-   * @type {Number} The number of shards to allocate to this index.
-   */
-  this.numberOfShards = 5;
+/**
+ * The index's name.
+ * @type {String} The index's name.
+ */
+Index.prototype.name = '';
 
-  /**
-   * The number of replicas to allocate to this index. This can be updated
-   * dynamically.
-   * @type {Number} The number of replicas to allocate to this index.
-   */
-  this.numberOfReplicas = 1;
+/**
+ * The number of shards to allocate to this index. This can't be updated
+ * unless we reindex with new settings.
+ * @type {Number} The number of shards to allocate to this index.
+ */
+Index.prototype.numberOfShards = 5;
 
-  /**
-   * The index alias for this index. This alias is an endpoint that masks the
-   * actual index endpoint, so that future index updates will be easier.
-   * @type {String} The index alias for this index.
-   */
-  this.indexAlias = '';
+/**
+ * The number of replicas to allocate to this index. This can be updated
+ * dynamically.
+ * @type {Number} The number of replicas to allocate to this index.
+ */
+Index.prototype.numberOfReplicas = 1;
 
-  /**
-   * The search alias for this index. Search aliases can point to multiple
-   * indices. This alias allows searching to be decoupled from indexing.
-   * @type {String} The search alias for this index.
-   */
-  this.searchAlias = '';
+/**
+ * The index alias for this index. This alias is an endpoint that masks the
+ * actual index endpoint, so that future index updates will be easier.
+ * @type {String} The index alias for this index.
+ */
+Index.prototype.indexAlias = '';
 
-  /**
-   * The mapping for this index. Should be a Mapping object.
-   * @type {Object} The mapping for this index.
-   */
-  this.mapping = {};
+/**
+ * The search alias for this index. Search aliases can point to multiple
+ * indices. This alias allows searching to be decoupled from indexing.
+ * @type {String} The search alias for this index.
+ */
+Index.prototype.searchAlias = '';
 
-  /**
-   * Custom analyzers for this index. Should be an Array of Analyzer objects.
-   * @type {Array} An Array of Analyzer objects.
-   */
-  this.analyzers = [];
+/**
+ * The mapping for this index. Should be a Mapping object.
+ * @type {Object} The mapping for this index.
+ */
+Index.prototype.mapping = {};
 
-  /**
-   * The search query to execute when invoking the scroll api. We can use
-   * this to limit the data being transferred during a reindex operation.
-   * @type {object} The scroll search query.
-   */
-  this.reindexScrollQuery = {
-    query: {
-      match_all: {},
-    },
-  };
-}
+/**
+ * Custom analyzers for this index. Should be an Array of Analyzer objects.
+ * @type {Array} An Array of Analyzer objects.
+ */
+Index.prototype.analyzers = [];
+
+/**
+ * The search query to execute when invoking the scroll api. We can use
+ * this to limit the data being transferred during a reindex operation.
+ * @type {object} The scroll search query.
+ */
+Index.prototype.reindexScrollQuery = {
+  query: {
+    match_all: {},
+  },
+};
 
 Index.prototype.setName = function (name) {
   if (name && String.isInstance(name)) {
