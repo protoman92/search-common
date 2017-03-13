@@ -280,6 +280,22 @@ exports.deleteDocumentObservable = function (args) {
 };
 
 /**
+ * Delete documents by query.
+ * @param  {object} args This parameter must contain keys such as index,
+ * type and body. The query body should contain queries that identify the
+ * appropriate documents to delete.
+ * @return {rx.Observable} An Observable object.
+ */
+exports.deleteByQueryObservable = function (args) {
+  if (client && args) {
+    return rx.Observable.fromPromise(client.deleteByQuery(args));
+  }
+
+  Error.debugException(args);
+  return rx.Observable.empty();
+};
+
+/**
  * Get a document by id.
  * @param  {object} args This parameter must contain keys such as index, id,
  * type and data. These keys identify values that will be passed to the

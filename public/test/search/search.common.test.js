@@ -1,3 +1,5 @@
+process.env.NODE_ENV = 'development';
+
 /**
  * We need to initialize the search dependency first because there are
  * some fields that require methods exported by this module. For e.g.
@@ -29,6 +31,7 @@ const {
   FieldSet,
   Index,
   Mapping,
+  Params,
   SearchItem,
   SearchResult,
   Tokenizer,
@@ -434,7 +437,7 @@ describe('Index and Search Tests', () => {
   });
 
   const testIndexes = [testIndex];
-  const objectCount = 5;
+  const objectCount = 100;
   const stringLength = 10;
   const arrayLength = 2;
 
@@ -447,8 +450,8 @@ describe('Index and Search Tests', () => {
 
       array1: (function () {
         return new Array(arrayLength)
-              .fill('')
-              .map(() => String.randomString(stringLength));
+          .fill('')
+          .map(() => String.randomString(stringLength));
       }()),
     }));
 
@@ -457,13 +460,18 @@ describe('Index and Search Tests', () => {
 
     search.createIndexesObservable({ index: testIndexes })
       .flatMap(() => rx.Observable.from(testIndexes))
-      .flatMap(index => rx.Observable.from(objectArray)
-        .map(object => ({
-          index: index.getName(),
-          type: 'test-type',
-          body: object.json(),
-        }))
-        .flatMap(args => search.indexDocumentObservable(args)))
+      .flatMap(index => search.bulkUpdateObservable({
+        index: index.name,
+        type: 'test-type',
+        body: objectArray.map(obj => Params.BulkIndex
+          .newBuilder()
+          .withIndex(index.name)
+          .withType('test-type')
+          .withId(faker.id())
+          .withUpdate(obj.json())
+          .build()),
+      }))
+      .onErrorReturn(false)
       /**
        * Delay the subscription in order for ElasticSearch to register
        * the data to be available to searches and scrolls.
@@ -768,6 +776,34 @@ describe('Index and Search Tests', () => {
           },
         );
     }, requestTimeout);
+
+  it(
+    'Delete-by-query should work correctly',
+    (done) => {
+      search
+        .deleteByQueryObservable({
+          index: testIndex.name,
+
+          body: {
+            query: {
+              match_all: {},
+            },
+          },
+        })
+        .subscribe(
+          (val) => {
+            expect(val.total).toBe(objectArray.length);
+          },
+
+          (err) => {
+            throw err;
+          },
+
+          () => {
+            done();
+          },
+        );
+    });
 });
 
 describe('Re-Mapping Tests', () => {

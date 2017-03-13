@@ -165,9 +165,9 @@ BaseParams.Builder = function (instance) {
           .withType(data[Params.TYPE_KEY])
           .withId(data[Params.ID_KEY])
           .withParent(data[Params.PARENT_KEY]);
-      } else {
-        return this;
       }
+
+      return this;
     },
 
     build() {
@@ -265,7 +265,7 @@ function Update() {
         utils.isEmpty(params.getDocUpdate()):
 
       case !params.hasAllBaseInformation():
-        Error.debugException();
+        Error.debugException(params);
         return false;
 
       default:
@@ -511,8 +511,42 @@ BulkIndex.newBuilder = function () {
   return BulkIndex.Builder();
 };
 
+function BulkDelete() {
+  const params = new BaseBulk();
+
+  params.hasAllRequiredInformation = function () {
+    switch (true) {
+      case !params.hasAllBaseInformation():
+        Error.debugException();
+        return false;
+
+      default:
+        break;
+    }
+
+    return true;
+  };
+
+  params.jsonArray = function () {
+    return [{ index: params.destinationJson() }];
+  };
+
+  return params;
+}
+
+BulkDelete.Builder = function () {
+  const instance = new BulkDelete();
+  const builder = BaseParams.newBuilder(instance);
+  return builder;
+};
+
+BulkDelete.newBuilder = function () {
+  return BulkDelete.Builder();
+};
+
 Params.Update = Update;
 Params.BulkIndex = BulkIndex;
 Params.BulkUpdate = BulkUpdate;
+Params.BulkDelete = BulkDelete;
 
 module.exports = Params;
