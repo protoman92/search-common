@@ -1,33 +1,13 @@
 process.env.NODE_ENV = 'development';
 
-/**
- * We need to initialize the search dependency first because there are
- * some fields that require methods exported by this module. For e.g.
- * field.js requires the use of search.isVersion5x() to check ES version.
- */
-const baseDir = '../../../..';
-const sharedDir = `${baseDir}/node-common`;
-const sharedHandlerDir = `${sharedDir}/handlers`;
-const sharedPublicDir = `${sharedDir}/public`;
-const sharedTestUtilDir = `${sharedPublicDir}/test/util`;
-const sharedSearchDir = `${baseDir}/search-common/handlers/search`;
-const search = require(`${sharedSearchDir}/search.js`);
-
-search.currentVersion = function () {
-  return '5.0';
-};
-
 const rx = require('rx');
 const sinon = require('sinon');
-
-const faker = require(`${sharedTestUtilDir}/faker.js`);
-const testUtils = require(`${sharedTestUtilDir}/common.js`);
-const utils = require(`${sharedHandlerDir}/util/common.js`);
 
 const {
   Analyzer,
   AnalyzerSet,
   CharFilter,
+  Client: search,
   FieldSet,
   Index,
   Mapping,
@@ -39,10 +19,14 @@ const {
   Type,
   Sort,
   Field,
-} = require(sharedSearchDir)();
+} = require('../../../lib/search')();
 
-utils.includeUtils();
-testUtils.includeUtils();
+search.currentVersion = function () {
+  return '5.0';
+};
+
+const { utils } = require('../../../../node-common/lib/util');
+const { faker } = require('../../../../node-common/public/test/util');
 
 const delay = 5000;
 const requestTimeout = 1000000;
@@ -150,8 +134,8 @@ describe('Model Tests', () => {
 });
 
 describe('Function Tests', () => {
-  const indexGetFcn = 'getAllIndexesAndAliasesObservable';
-  const typeGetFcn = 'getAllTypesObservable';
+  const indexGetFcn = 'rxGetAllIndexesAndAliases';
+  const typeGetFcn = 'rxGetAllTypes';
 
   beforeEach((done) => {
     sinon.stub(search, indexGetFcn, () =>
@@ -200,14 +184,14 @@ describe('Function Tests', () => {
     'Index and type supply functions should work when no index/type \
     supplied',
     (done) => {
-      search.supplyIndexAndTypeObservable({}).subscribe(observer(done));
+      search.rxSupplyIndexAndType({}).subscribe(observer(done));
     });
 
   it(
     'Index and type supply functions should work when one index/no type \
     supplied',
     (done) => {
-      search.supplyIndexAndTypeObservable({
+      search.rxSupplyIndexAndType({
         index: 'TestIndex',
       }).subscribe(observer(done));
     });
@@ -216,7 +200,7 @@ describe('Function Tests', () => {
     'Index and type supply functions should work when index array/no \
     type supplied',
     (done) => {
-      search.supplyIndexAndTypeObservable({
+      search.rxSupplyIndexAndType({
         index: ['TestIndex1', 'TestIndex2'],
       }).subscribe(observer(done));
     });
@@ -225,7 +209,7 @@ describe('Function Tests', () => {
     'Index and type supply functions should work when no index/one \
     type supplied',
     (done) => {
-      search.supplyIndexAndTypeObservable({
+      search.rxSupplyIndexAndType({
         type: 'TestType',
       }).subscribe(observer(done));
     });
@@ -234,7 +218,7 @@ describe('Function Tests', () => {
     'Index and type supply functions should work when no index/type array \
     supplied',
     (done) => {
-      search.supplyIndexAndTypeObservable({
+      search.rxSupplyIndexAndType({
         type: ['TestType1', 'TestType2'],
       }).subscribe(observer(done));
     });
@@ -243,7 +227,7 @@ describe('Function Tests', () => {
     'Index and type supply functions should work when index array/type \
     array supplied',
     (done) => {
-      search.supplyIndexAndTypeObservable({
+      search.rxSupplyIndexAndType({
         index: ['TestIndex1', 'TestIndex2'],
         type: ['TestType1', 'TestType2'],
       }).subscribe(observer(done));
@@ -458,9 +442,9 @@ describe('Index and Search Tests', () => {
   beforeAll((done) => {
     search.startService();
 
-    search.createIndexesObservable({ index: testIndexes })
+    search.rxCreateIndexes({ index: testIndexes })
       .flatMap(() => rx.Observable.from(testIndexes))
-      .flatMap(index => search.bulkUpdateObservable({
+      .flatMap(index => search.rxBulkUpdate({
         index: index.name,
         type: 'test-type',
         body: objectArray.map(obj => Params.BulkIndex
@@ -491,7 +475,7 @@ describe('Index and Search Tests', () => {
 
   afterAll((done) => {
     if (clearDataOnStop) {
-      search.deleteIndexesObservable({})
+      search.rxDeleteIndexes({})
         .delay(delay)
         .subscribe(
           () => {},
@@ -542,7 +526,7 @@ describe('Index and Search Tests', () => {
 
           return args;
         })
-        .flatMap(args => search.searchDocumentObservable(args))
+        .flatMap(args => search.rxSearchDocument(args))
         .subscribe(
           (val) => {
             expect(val.total).toBeGreaterThan(0);
@@ -561,7 +545,7 @@ describe('Index and Search Tests', () => {
   it(
     'Autocomplete search with autocomplete engine should work correctly',
     (done) => {
-      const oldSearch = search.searchDocumentObservable;
+      const oldSearch = search.rxSearchDocument;
 
       /**
        * We stub out the search method with one that occasionally throws an
@@ -570,7 +554,7 @@ describe('Index and Search Tests', () => {
        * for a term, when the user enters the next term the engine is still
        * good to go.
        */
-      sinon.stub(search, 'searchDocumentObservable', (args) => {
+      sinon.stub(search, 'rxSearchDocument', (args) => {
         if (Boolean.random()) {
           console.log('No error this time!');
           return oldSearch(args);
@@ -613,7 +597,7 @@ describe('Index and Search Tests', () => {
          * If we do not restore the stubbed method, other tests will run
          * the stubbed search as well.
          */
-        search.searchDocumentObservable.restore();
+        search.rxSearchDocument.restore();
         done();
       }, 5000);
     }, requestTimeout);
@@ -622,11 +606,11 @@ describe('Index and Search Tests', () => {
     'Index and type supply functions should work correctly, even if no \
     index/type specified',
     (done) => {
-      search.searchDocumentObservable({ index: 'test*' })
+      search.rxSearchDocument({ index: 'test*' })
         .map(result => result.hits)
         .flatMap(items => rx.Observable.from(items))
         .map(item => item.id)
-        .flatMap(id => search.updateDocumentObservable({
+        .flatMap(id => search.rxUpdateDocument({
           id,
 
           body: {
@@ -660,10 +644,10 @@ describe('Index and Search Tests', () => {
       let allItems = [];
       const size = 100;
 
-      search.searchDocumentObservable({ size: search.MAX_SEARCH_PAGE_SIZE })
+      search.rxSearchDocument({ size: search.MAX_SEARCH_PAGE_SIZE })
         .flatMap((result) => {
           allItems = result.hits;
-          return search.scrollDocumentsObservable({ scroll: '1m', size });
+          return search.rxScrollDocument({ scroll: '1m', size });
         })
         .subscribe(
           (val) => {
@@ -707,7 +691,7 @@ describe('Index and Search Tests', () => {
       const newIndexes = [newIndex];
 
       search
-        .reindexObservable({
+        .rxReindex({
           oldIndex: testIndexes,
           newIndex: newIndexes,
           createNewIndexes: true,
@@ -722,12 +706,12 @@ describe('Index and Search Tests', () => {
         .toArray()
         .flatMap(() => rx.Observable
           .concat(
-            search.searchDocumentObservable({
+            search.rxSearchDocument({
               index: testIndexes.map(index => index.getName()),
               size: 10000,
             }),
 
-            search.searchDocumentObservable({
+            search.rxSearchDocument({
               index: newIndexes.map(index => index.getName()),
               size: 10000,
             }),
@@ -747,7 +731,7 @@ describe('Index and Search Tests', () => {
             expect(aItems.length).toBe(bItems.length);
             expect(aItems).toEqual(bItems);
           })
-          .flatMap(() => search.getAllIndexesAndAliasesObservable())
+          .flatMap(() => search.rxGetAllIndexesAndAliases())
           .doOnNext((aliases) => {
             const compare = function (indexes, value) {
               expect(indexes
@@ -781,7 +765,7 @@ describe('Index and Search Tests', () => {
     'Delete-by-query should work correctly',
     (done) => {
       search
-        .deleteByQueryObservable({
+        .rxDeleteByQuery({
           index: testIndex.name,
 
           body: {
@@ -834,7 +818,7 @@ describe('Re-Mapping Tests', () => {
   }, requestTimeout);
 
   beforeEach((done) => {
-    search.createIndexesObservable({ index: testIndexes })
+    search.rxCreateIndexes({ index: testIndexes })
       .onErrorReturn(true)
       .subscribe(
         () => {},
@@ -851,7 +835,7 @@ describe('Re-Mapping Tests', () => {
 
   afterEach((done) => {
     if (clearDataOnStop) {
-      search.deleteIndexesObservable({})
+      search.rxDeleteIndexes({})
         .subscribe(
           () => {},
 
@@ -874,14 +858,14 @@ describe('Re-Mapping Tests', () => {
     new index',
     (done) => {
       search
-        .reindexObservable({
+        .rxReindex({
           oldIndex: testIndexes,
           newIndex: newIndexes,
           createNewIndexes: true,
           removeOldIndexes: false,
           transferData: false,
         })
-        .flatMap(() => search.getMappingsObservable({
+        .flatMap(() => search.rxGetMappings({
           index: [testIndex.getName(), newIndex.getName()],
         }))
         .doOnNext((mappings) => {
@@ -971,7 +955,7 @@ describe('Nested Object Tests', () => {
   }, requestTimeout);
 
   beforeEach((done) => {
-    search.createIndexesObservable({ index: testIndexes })
+    search.rxCreateIndexes({ index: testIndexes })
       .flatMap(() => rx.Observable.from(testIndexes))
       .flatMap(index => rx.Observable.from(objectArray)
         .map(object => ({
@@ -979,7 +963,7 @@ describe('Nested Object Tests', () => {
           type: 'test-type',
           body: object.json(),
         }))
-        .flatMap(args => search.indexDocumentObservable(args)))
+        .flatMap(args => search.rxIndexDocument(args)))
       /**
        * Delay the subscription in order for ElasticSearch to register
        * the data to be available to searches and scrolls.
@@ -1001,7 +985,7 @@ describe('Nested Object Tests', () => {
 
   afterEach((done) => {
     if (clearDataOnStop) {
-      search.deleteIndexesObservable({})
+      search.rxDeleteIndexes({})
         .subscribe(
           () => {},
 
@@ -1034,7 +1018,7 @@ describe('Nested Object Tests', () => {
       rx.Observable
         .from(sortAndOrderPairs())
         .flatMap(pair => search
-          .searchDocumentObservable({
+          .rxSearchDocument({
             index: testIndex.name,
             type: 'test-type',
 
