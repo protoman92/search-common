@@ -7,7 +7,7 @@ const {
   Analyzer,
   AnalyzerSet,
   CharFilter,
-  Client: search,
+  Client,
   FieldSet,
   Index,
   Mapping,
@@ -19,14 +19,14 @@ const {
   Type,
   Sort,
   Field,
-} = require('../../../lib/search')();
-
-search.currentVersion = function () {
-  return '5.0';
-};
+} = require('../../../lib/search');
 
 const { utils } = require('../../../../node-common/lib/util');
 const { faker } = require('../../../../node-common/public/test/util');
+
+Client.currentVersion = function () {
+  return '5.0';
+};
 
 const delay = 5000;
 const requestTimeout = 1000000;
@@ -138,14 +138,14 @@ describe('Function Tests', () => {
   const typeGetFcn = 'rxGetAllTypes';
 
   beforeEach((done) => {
-    sinon.stub(search, indexGetFcn, () =>
+    sinon.stub(Client, indexGetFcn).callsFake(() =>
       rx.Observable.just({
         Index1: {},
         Index2: {},
         Index3: {},
       }));
 
-    sinon.stub(search, typeGetFcn, () =>
+    sinon.stub(Client, typeGetFcn).callsFake(() =>
       rx.Observable.just({
         Type1: {},
         Type2: {},
@@ -156,7 +156,7 @@ describe('Function Tests', () => {
   });
 
   afterEach((done) => {
-    [indexGetFcn, typeGetFcn].forEach(fcn => search[fcn].restore());
+    [indexGetFcn, typeGetFcn].forEach(fcn => Client[fcn].restore());
     done();
   });
 
@@ -170,8 +170,7 @@ describe('Function Tests', () => {
       },
 
       (err) => {
-        console.log(err);
-        throw err;
+        done.fail(err);
       },
 
       () => {
@@ -184,14 +183,14 @@ describe('Function Tests', () => {
     'Index and type supply functions should work when no index/type \
     supplied',
     (done) => {
-      search.rxSupplyIndexAndType({}).subscribe(observer(done));
+      Client.rxSupplyIndexAndType({}).subscribe(observer(done));
     });
 
   it(
     'Index and type supply functions should work when one index/no type \
     supplied',
     (done) => {
-      search.rxSupplyIndexAndType({
+      Client.rxSupplyIndexAndType({
         index: 'TestIndex',
       }).subscribe(observer(done));
     });
@@ -200,7 +199,7 @@ describe('Function Tests', () => {
     'Index and type supply functions should work when index array/no \
     type supplied',
     (done) => {
-      search.rxSupplyIndexAndType({
+      Client.rxSupplyIndexAndType({
         index: ['TestIndex1', 'TestIndex2'],
       }).subscribe(observer(done));
     });
@@ -209,7 +208,7 @@ describe('Function Tests', () => {
     'Index and type supply functions should work when no index/one \
     type supplied',
     (done) => {
-      search.rxSupplyIndexAndType({
+      Client.rxSupplyIndexAndType({
         type: 'TestType',
       }).subscribe(observer(done));
     });
@@ -218,7 +217,7 @@ describe('Function Tests', () => {
     'Index and type supply functions should work when no index/type array \
     supplied',
     (done) => {
-      search.rxSupplyIndexAndType({
+      Client.rxSupplyIndexAndType({
         type: ['TestType1', 'TestType2'],
       }).subscribe(observer(done));
     });
@@ -227,7 +226,7 @@ describe('Function Tests', () => {
     'Index and type supply functions should work when index array/type \
     array supplied',
     (done) => {
-      search.rxSupplyIndexAndType({
+      Client.rxSupplyIndexAndType({
         index: ['TestIndex1', 'TestIndex2'],
         type: ['TestType1', 'TestType2'],
       }).subscribe(observer(done));
@@ -440,11 +439,11 @@ describe('Index and Search Tests', () => {
     }));
 
   beforeAll((done) => {
-    search.startService();
+    Client.startService();
 
-    search.rxCreateIndexes({ index: testIndexes })
+    Client.rxCreateIndexes({ index: testIndexes })
       .flatMap(() => rx.Observable.from(testIndexes))
-      .flatMap(index => search.rxBulkUpdate({
+      .flatMap(index => Client.rxBulkUpdate({
         index: index.name,
         type: 'test-type',
         body: objectArray.map(obj => Params.BulkIndex
@@ -455,7 +454,7 @@ describe('Index and Search Tests', () => {
           .withUpdate(obj.json())
           .build()),
       }))
-      .onErrorReturn(false)
+      .catchReturn(false)
       /**
        * Delay the subscription in order for ElasticSearch to register
        * the data to be available to searches and scrolls.
@@ -465,7 +464,7 @@ describe('Index and Search Tests', () => {
         () => {},
 
         (err) => {
-          throw err;
+          done.fail(err);
         },
 
         () => {
@@ -475,7 +474,7 @@ describe('Index and Search Tests', () => {
 
   afterAll((done) => {
     if (clearDataOnStop) {
-      search.rxDeleteIndexes({})
+      Client.rxDeleteIndexes({})
         .delay(delay)
         .subscribe(
           () => {},
@@ -526,7 +525,7 @@ describe('Index and Search Tests', () => {
 
           return args;
         })
-        .flatMap(args => search.rxSearchDocument(args))
+        .flatMap(args => Client.rxSearchDocument(args))
         .subscribe(
           (val) => {
             expect(val.total).toBeGreaterThan(0);
@@ -545,7 +544,7 @@ describe('Index and Search Tests', () => {
   it(
     'Autocomplete search with autocomplete engine should work correctly',
     (done) => {
-      const oldSearch = search.rxSearchDocument;
+      const oldSearch = Client.rxSearchDocument;
 
       /**
        * We stub out the search method with one that occasionally throws an
@@ -554,7 +553,7 @@ describe('Index and Search Tests', () => {
        * for a term, when the user enters the next term the engine is still
        * good to go.
        */
-      sinon.stub(search, 'rxSearchDocument', (args) => {
+      sinon.stub(Client, 'rxSearchDocument').callsFake((args) => {
         if (Boolean.random()) {
           console.log('No error this time!');
           return oldSearch(args);
@@ -563,7 +562,7 @@ describe('Index and Search Tests', () => {
         return rx.Observable.throw(Error('Failed to search'));
       });
 
-      const engine = search.autocompleteSearchEngine({
+      const engine = Client.autocompleteSearchEngine({
         onResult(val) {
           console.log(val.total);
         },
@@ -597,7 +596,7 @@ describe('Index and Search Tests', () => {
          * If we do not restore the stubbed method, other tests will run
          * the stubbed search as well.
          */
-        search.rxSearchDocument.restore();
+        Client.rxSearchDocument.restore();
         done();
       }, 5000);
     }, requestTimeout);
@@ -606,11 +605,11 @@ describe('Index and Search Tests', () => {
     'Index and type supply functions should work correctly, even if no \
     index/type specified',
     (done) => {
-      search.rxSearchDocument({ index: 'test*' })
+      Client.rxSearchDocument({ index: 'test*' })
         .map(result => result.hits)
         .flatMap(items => rx.Observable.from(items))
         .map(item => item.id)
-        .flatMap(id => search.rxUpdateDocument({
+        .flatMap(id => Client.rxUpdateDocument({
           id,
 
           body: {
@@ -619,15 +618,14 @@ describe('Index and Search Tests', () => {
             },
           },
         }))
-        .onErrorResumeNext(rx.Observable.empty())
+        .catch(rx.Observable.empty())
         .subscribe(
           (val) => {
             expect(val.result).toEqual('updated');
           },
 
           (err) => {
-            console.log(err);
-            throw err;
+            done.fail(err);
           },
 
           () => {
@@ -644,10 +642,10 @@ describe('Index and Search Tests', () => {
       let allItems = [];
       const size = 100;
 
-      search.rxSearchDocument({ size: search.MAX_SEARCH_PAGE_SIZE })
+      Client.rxSearchDocument({ size: Client.MAX_SEARCH_PAGE_SIZE })
         .flatMap((result) => {
           allItems = result.hits;
-          return search.rxScrollDocument({ scroll: '1m', size });
+          return Client.rxScrollDocument({ scroll: '1m', size });
         })
         .subscribe(
           (val) => {
@@ -656,7 +654,7 @@ describe('Index and Search Tests', () => {
           },
 
           (err) => {
-            throw err;
+            done.fail(err);
           },
 
           () => {
@@ -690,7 +688,7 @@ describe('Index and Search Tests', () => {
 
       const newIndexes = [newIndex];
 
-      search
+      Client
         .rxReindex({
           oldIndex: testIndexes,
           newIndex: newIndexes,
@@ -706,12 +704,12 @@ describe('Index and Search Tests', () => {
         .toArray()
         .flatMap(() => rx.Observable
           .concat(
-            search.rxSearchDocument({
+            Client.rxSearchDocument({
               index: testIndexes.map(index => index.getName()),
               size: 10000,
             }),
 
-            search.rxSearchDocument({
+            Client.rxSearchDocument({
               index: newIndexes.map(index => index.getName()),
               size: 10000,
             }),
@@ -731,7 +729,7 @@ describe('Index and Search Tests', () => {
             expect(aItems.length).toBe(bItems.length);
             expect(aItems).toEqual(bItems);
           })
-          .flatMap(() => search.rxGetAllIndexesAndAliases())
+          .flatMap(() => Client.rxGetAllIndexesAndAliases())
           .doOnNext((aliases) => {
             const compare = function (indexes, value) {
               expect(indexes
@@ -751,8 +749,7 @@ describe('Index and Search Tests', () => {
           () => {},
 
           (err) => {
-            console.log(err);
-            throw err;
+            done.fail(err);
           },
 
           () => {
@@ -764,7 +761,7 @@ describe('Index and Search Tests', () => {
   it(
     'Delete-by-query should work correctly',
     (done) => {
-      search
+      Client
         .rxDeleteByQuery({
           index: testIndex.name,
 
@@ -780,7 +777,7 @@ describe('Index and Search Tests', () => {
           },
 
           (err) => {
-            throw err;
+            done.fail(err);
           },
 
           () => {
@@ -808,7 +805,7 @@ describe('Re-Mapping Tests', () => {
   const newIndexes = [newIndex];
 
   beforeAll((done) => {
-    search.startService();
+    Client.startService();
     done();
   }, requestTimeout);
 
@@ -818,13 +815,13 @@ describe('Re-Mapping Tests', () => {
   }, requestTimeout);
 
   beforeEach((done) => {
-    search.rxCreateIndexes({ index: testIndexes })
-      .onErrorReturn(true)
+    Client.rxCreateIndexes({ index: testIndexes })
+      .catchReturn(true)
       .subscribe(
         () => {},
 
         (err) => {
-          throw err;
+          done.fail(err);
         },
 
         () => {
@@ -835,13 +832,12 @@ describe('Re-Mapping Tests', () => {
 
   afterEach((done) => {
     if (clearDataOnStop) {
-      search.rxDeleteIndexes({})
+      Client.rxDeleteIndexes({})
         .subscribe(
           () => {},
 
           (err) => {
-            console.log(err);
-            throw err;
+            done.fail(err);
           },
 
           () => {
@@ -857,7 +853,7 @@ describe('Re-Mapping Tests', () => {
     'When a re-mapping is carried out, it should be reflected in the \
     new index',
     (done) => {
-      search
+      Client
         .rxReindex({
           oldIndex: testIndexes,
           newIndex: newIndexes,
@@ -865,7 +861,7 @@ describe('Re-Mapping Tests', () => {
           removeOldIndexes: false,
           transferData: false,
         })
-        .flatMap(() => search.rxGetMappings({
+        .flatMap(() => Client.rxGetMappings({
           index: [testIndex.getName(), newIndex.getName()],
         }))
         .doOnNext((mappings) => {
@@ -892,8 +888,7 @@ describe('Re-Mapping Tests', () => {
           () => {},
 
           (err) => {
-            console.log(err);
-            throw err;
+            done.fail(err);
           },
 
           () => {
@@ -945,7 +940,7 @@ describe('Nested Object Tests', () => {
     }));
 
   beforeAll((done) => {
-    search.startService();
+    Client.startService();
     done();
   }, requestTimeout);
 
@@ -955,7 +950,7 @@ describe('Nested Object Tests', () => {
   }, requestTimeout);
 
   beforeEach((done) => {
-    search.rxCreateIndexes({ index: testIndexes })
+    Client.rxCreateIndexes({ index: testIndexes })
       .flatMap(() => rx.Observable.from(testIndexes))
       .flatMap(index => rx.Observable.from(objectArray)
         .map(object => ({
@@ -963,7 +958,7 @@ describe('Nested Object Tests', () => {
           type: 'test-type',
           body: object.json(),
         }))
-        .flatMap(args => search.rxIndexDocument(args)))
+        .flatMap(args => Client.rxIndexDocument(args)))
       /**
        * Delay the subscription in order for ElasticSearch to register
        * the data to be available to searches and scrolls.
@@ -973,11 +968,10 @@ describe('Nested Object Tests', () => {
         () => {},
 
         (err) => {
-          throw err;
+          done.fail(err);
         },
 
         () => {
-          console.log('Created index');
           done();
         },
       );
@@ -985,13 +979,12 @@ describe('Nested Object Tests', () => {
 
   afterEach((done) => {
     if (clearDataOnStop) {
-      search.rxDeleteIndexes({})
+      Client.rxDeleteIndexes({})
         .subscribe(
           () => {},
 
           (err) => {
-            console.log(err);
-            throw err;
+            done.fail(err);
           },
 
           () => {
@@ -1017,7 +1010,7 @@ describe('Nested Object Tests', () => {
 
       rx.Observable
         .from(sortAndOrderPairs())
-        .flatMap(pair => search
+        .flatMap(pair => Client
           .rxSearchDocument({
             index: testIndex.name,
             type: 'test-type',
@@ -1032,7 +1025,7 @@ describe('Nested Object Tests', () => {
                   .build(),
               ],
 
-              size: search.MAX_SEARCH_PAGE_SIZE,
+              size: Client.MAX_SEARCH_PAGE_SIZE,
             },
           })
           .map(result => result.hits)
@@ -1059,7 +1052,7 @@ describe('Nested Object Tests', () => {
           () => {},
 
           (err) => {
-            throw err;
+            done.fail(err);
           },
 
           () => {
