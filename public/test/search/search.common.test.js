@@ -1,3 +1,5 @@
+// @flow
+
 process.env.NODE_ENV = 'development';
 
 const rx = require('rx');

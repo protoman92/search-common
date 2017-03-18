@@ -1,3 +1,5 @@
+// @flow
+
 const strings = {
   // Authentication strings
   authErrorUnauthorized: 'authErrorUnauthorized',
