@@ -557,7 +557,6 @@ describe('Index and Search Tests', () => {
        */
       sinon.stub(Client, 'rxSearchDocument').callsFake((args) => {
         if (Boolean.random()) {
-          console.log('No error this time!');
           return oldSearch(args);
         }
 
@@ -565,13 +564,8 @@ describe('Index and Search Tests', () => {
       });
 
       const engine = Client.autocompleteSearchEngine({
-        onResult(val) {
-          console.log(val.total);
-        },
-
-        onError(err) {
-          console.log(err.message);
-        },
+        onResult(val) {},
+        onError(err) {},
       });
 
       Number.range(10).forEach((word) => {
@@ -672,7 +666,6 @@ describe('Index and Search Tests', () => {
               .map(item => item._source)
               .sort(sort);
 
-            console.log(scrollData);
             // expect(allData.length).toBe(scrollData.length);
             // expect(allData).toEqual(scrollData);
             done();
