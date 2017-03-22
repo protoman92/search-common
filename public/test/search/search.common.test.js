@@ -429,14 +429,14 @@ describe('Index and Search Tests', () => {
   const objectArray = new Array(objectCount)
     .fill('')
     .map(() => TestModel1.fromData({
-      text1: String.randomString(stringLength),
-      text2: String.randomString(stringLength),
-      text3: String.randomString(stringLength),
+      text1: String.random(stringLength),
+      text2: String.random(stringLength),
+      text3: String.random(stringLength),
 
       array1: (function () {
         return new Array(arrayLength)
           .fill('')
-          .map(() => String.randomString(stringLength));
+          .map(() => String.random(stringLength));
       }()),
     }));
 
