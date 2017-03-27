@@ -482,8 +482,7 @@ describe('Index and Search Tests', () => {
           () => {},
 
           (err) => {
-            utils.log(err);
-            done();
+            done.fail(err);
           },
 
         () => {
@@ -534,7 +533,7 @@ describe('Index and Search Tests', () => {
           },
 
           (err) => {
-            utils.log(err);
+            done.fail(err);
           },
 
           () => {
