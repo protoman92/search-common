@@ -441,7 +441,7 @@ describe('Index and Search Tests', () => {
     }));
 
   beforeAll((done) => {
-    Client.startService();
+    Client.rxStartService({}).subscribe();
 
     Client.rxCreateIndexes({ index: testIndexes })
       .flatMap(() => rx.Observable.from(testIndexes))
@@ -799,7 +799,7 @@ describe('Re-Mapping Tests', () => {
   const newIndexes = [newIndex];
 
   beforeAll((done) => {
-    Client.startService();
+    Client.rxStartService({}).subscribe();
     done();
   }, requestTimeout);
 
@@ -934,7 +934,7 @@ describe('Nested Object Tests', () => {
     }));
 
   beforeAll((done) => {
-    Client.startService();
+    Client.rxStartService({}).subscribe();
     done();
   }, requestTimeout);
 
